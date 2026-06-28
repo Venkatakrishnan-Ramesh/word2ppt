@@ -53,68 +53,120 @@ def _requested_slide_count(instructions: str) -> int:
     return clamp_max_slides(int(match.group(1)))
 
 
-def _split_slide(slide) -> list:
-    """Split one slide into smaller slides while preserving its content."""
-    parts = []
-    if slide.table and len(slide.table.rows) > 1:
-        total = len(slide.table.rows)
-        for idx, row in enumerate(slide.table.rows, 1):
-            parts.append(
-                type(slide)(
-                    title=f"{slide.title} ({idx}/{total})",
-                    bullets=slide.bullets if idx == 1 else [],
-                    table=type(slide.table)(headers=slide.table.headers, rows=[row]),
-                    notes=slide.notes if idx == 1 else "",
-                )
-            )
-        return parts
-
-    if slide.diagram and len(slide.diagram.steps) > 1:
-        total = len(slide.diagram.steps)
-        for idx, step in enumerate(slide.diagram.steps, 1):
-            parts.append(
-                type(slide)(
-                    title=f"{slide.title} ({idx}/{total})",
-                    bullets=[step],
-                    notes=slide.notes if idx == 1 else "",
-                )
-            )
-        return parts
-
-    if len(slide.bullets) > 1:
-        total = len(slide.bullets)
-        for idx, bullet in enumerate(slide.bullets, 1):
-            parts.append(
-                type(slide)(
-                    title=f"{slide.title} ({idx}/{total})",
-                    bullets=[bullet],
-                    notes=slide.notes if idx == 1 else "",
-                )
-            )
-        return parts
-
-    return [slide]
-
-
 def _expand_to_target_slides(deck, target_slides: int):
-    """Best-effort expansion when the user asked for a larger slide count."""
+    """Best-effort expansion when the user asked for a larger slide count.
+
+    This keeps slides grouped. We only split when the slide has enough content to
+    remain readable after the split, rather than fanning a bullet list out into
+    one-bullet slides.
+    """
     if target_slides <= 0 or len(deck.slides) >= target_slides:
         return deck
 
-    expanded = []
-    for slide in deck.slides:
-        if len(expanded) >= target_slides:
+    expanded = list(deck.slides)
+    while len(expanded) < target_slides:
+        split_idx = _find_splittable_slide(expanded)
+        if split_idx is None:
             break
-        split = _split_slide(slide)
-        for part in split:
-            if len(expanded) >= target_slides:
-                break
-            expanded.append(part)
-
-    if len(expanded) < target_slides:
-        expanded.extend(deck.slides[len(expanded) : target_slides])
+        slide = expanded.pop(split_idx)
+        expanded[split_idx:split_idx] = _split_slide_balanced(slide)
 
     return type(deck)(title=deck.title, subtitle=deck.subtitle, slides=expanded)
+
+
+def _find_splittable_slide(slides) -> int | None:
+    """Return the index of the slide with the most content that can be split well."""
+    best_idx: int | None = None
+    best_size = 0
+    for idx, slide in enumerate(slides):
+        size = _splittable_size(slide)
+        if size > best_size:
+            best_idx = idx
+            best_size = size
+    return best_idx
+
+
+def _splittable_size(slide) -> int:
+    if slide.table and len(slide.table.rows) >= 4:
+        return len(slide.table.rows)
+    if slide.diagram and len(slide.diagram.steps) >= 4:
+        return len(slide.diagram.steps)
+    if len(slide.bullets) >= 4:
+        return len(slide.bullets)
+    return 0
+
+
+def _split_slide_balanced(slide):
+    """Split a slide into two grouped slides, keeping chunks readable."""
+    if slide.table and len(slide.table.rows) >= 4:
+        return _split_rows_balanced(slide)
+    if slide.diagram and len(slide.diagram.steps) >= 4:
+        return _split_steps_balanced(slide)
+    if len(slide.bullets) >= 4:
+        return _split_bullets_balanced(slide)
+    return [slide]
+
+
+def _split_bullets_balanced(slide):
+    bullets = list(slide.bullets)
+    split_at = max(2, len(bullets) // 2)
+    if len(bullets) - split_at < 2:
+        split_at = len(bullets) - 2
+    left = bullets[:split_at]
+    right = bullets[split_at:]
+    if not left or not right:
+        return [slide]
+    return [
+        type(slide)(title=f"{slide.title} (1/2)", bullets=left, notes=slide.notes),
+        type(slide)(title=f"{slide.title} (2/2)", bullets=right),
+    ]
+
+
+def _split_steps_balanced(slide):
+    steps = list(slide.diagram.steps)
+    split_at = max(2, len(steps) // 2)
+    if len(steps) - split_at < 2:
+        split_at = len(steps) - 2
+    left = steps[:split_at]
+    right = steps[split_at:]
+    if not left or not right:
+        return [slide]
+    diagram_type = type(slide.diagram)
+    return [
+        type(slide)(
+            title=f"{slide.title} (1/2)",
+            diagram=diagram_type(type=slide.diagram.type, direction=slide.diagram.direction, steps=left),
+            notes=slide.notes,
+        ),
+        type(slide)(
+            title=f"{slide.title} (2/2)",
+            diagram=diagram_type(type=slide.diagram.type, direction=slide.diagram.direction, steps=right),
+        ),
+    ]
+
+
+def _split_rows_balanced(slide):
+    rows = list(slide.table.rows)
+    split_at = max(2, len(rows) // 2)
+    if len(rows) - split_at < 2:
+        split_at = len(rows) - 2
+    left = rows[:split_at]
+    right = rows[split_at:]
+    if not left or not right:
+        return [slide]
+    table_type = type(slide.table)
+    return [
+        type(slide)(
+            title=f"{slide.title} (1/2)",
+            bullets=slide.bullets,
+            table=table_type(headers=slide.table.headers, rows=left),
+            notes=slide.notes,
+        ),
+        type(slide)(
+            title=f"{slide.title} (2/2)",
+            table=table_type(headers=slide.table.headers, rows=right),
+        ),
+    ]
 
 
 def convert(

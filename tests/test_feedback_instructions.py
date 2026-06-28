@@ -320,8 +320,9 @@ class FeedbackInstructionTests(unittest.TestCase):
             title="Deck",
             subtitle="Source",
             slides=[
-                Slide(title="Intro", bullets=["One", "Two", "Three"]),
-                Slide(title="Next", bullets=["Four", "Five"]),
+                Slide(title="Intro", bullets=["One", "Two", "Three", "Four"]),
+                Slide(title="Next", bullets=["Five", "Six", "Seven", "Eight"]),
+                Slide(title="More", bullets=["Nine", "Ten", "Eleven", "Twelve"]),
             ],
         )
 
@@ -340,7 +341,48 @@ class FeedbackInstructionTests(unittest.TestCase):
             )
 
         self.assertGreaterEqual(len(result.deck.slides), 5)
-        self.assertEqual(result.deck.slides[0].bullets, ["One"])
+        self.assertTrue(all(len(slide.bullets) != 1 for slide in result.deck.slides if slide.bullets))
+
+    def test_pipeline_keeps_bullet_chunks_grouped_when_expanding(self) -> None:
+        settings = Settings(
+            groq_api_key=None,
+            groq_model="test-model",
+            groq_fallback_model=None,
+            gemini_api_key=None,
+            gemini_model="test-gemini",
+            max_upload_bytes=1024,
+            groq_max_tokens=128,
+            groq_source_chars=256,
+            feedback_webhook_url=None,
+        )
+        blocks = [Block(kind="text", level=0, text="Body")]
+        deck = Deck(
+            title="Deck",
+            subtitle="Source",
+            slides=[
+                Slide(title="Intro", bullets=["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"]),
+                Slide(title="Middle", bullets=["B1", "B2", "B3", "B4", "B5", "B6"]),
+                Slide(title="End", bullets=["C1", "C2", "C3", "C4"]),
+            ],
+        )
+
+        with (
+            patch("app.pipeline.parse_source", return_value=blocks),
+            patch("app.pipeline.plan_deck", return_value=(deck, "heuristic")),
+            patch("app.pipeline.strip_diagrams", return_value=deck),
+            patch("app.pipeline.render_pptx", return_value=b"pptx"),
+            patch("app.pipeline.render_html", return_value="<html />"),
+        ):
+            result = convert(
+                Path("/tmp/tmpabc123.md"),
+                settings,
+                target_slides=5,
+                instructions="make it for 5 slides",
+            )
+
+        self.assertGreaterEqual(len(result.deck.slides), 5)
+        self.assertTrue(all(len(slide.bullets) != 1 for slide in result.deck.slides if slide.bullets))
+        self.assertTrue(any(len(slide.bullets) >= 2 for slide in result.deck.slides))
 
     def test_pipeline_can_disable_tables(self) -> None:
         settings = Settings(
