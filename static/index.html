@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>word2ppt · Word → Presentation</title>
+<style>
+  :root {
+    --accent: #2d5bff;
+    --accent-dark: #1b2a4a;
+    --bg: #0c0f1a;
+    --panel: #141a2e;
+    --panel-2: #1b2440;
+    --line: #2a3553;
+    --text: #e7ecf7;
+    --muted: #93a0c2;
+    --ok: #36d399;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(1100px 600px at 85% -10%, rgba(45,91,255,.25), transparent 60%),
+      radial-gradient(800px 500px at -10% 110%, rgba(54,211,153,.14), transparent 55%),
+      var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 5vw 4vw;
+  }
+  .shell { width: min(760px, 100%); }
+  header { margin-bottom: 1.8rem; }
+  .kicker {
+    font-size: .72rem; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700;
+  }
+  h1 {
+    margin: .35rem 0 .4rem; font-size: clamp(2rem, 1.2rem + 3vw, 3.1rem);
+    line-height: 1.02; letter-spacing: -.02em;
+  }
+  h1 span { color: var(--muted); }
+  .lede { color: var(--muted); max-width: 48ch; line-height: 1.5; margin: 0; }
+
+  .drop {
+    margin-top: 2rem; border: 1.5px dashed var(--line); border-radius: 20px;
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    padding: 2.6rem 2rem; text-align: center; cursor: pointer;
+    transition: border-color .3s var(--ease), transform .3s var(--ease), background .3s;
+  }
+  .drop:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .drop.drag { border-color: var(--accent); background: linear-gradient(180deg, #18204a, #1d285200); }
+  .drop .icon {
+    width: 54px; height: 54px; margin: 0 auto .9rem; border-radius: 14px;
+    display: grid; place-items: center; font-size: 1.5rem;
+    background: rgba(45,91,255,.16); border: 1px solid rgba(45,91,255,.4);
+  }
+  .drop strong { font-size: 1.05rem; }
+  .drop .hint { color: var(--muted); font-size: .85rem; margin-top: .4rem; }
+  .pill {
+    display: inline-block; margin-top: 1rem; font-size: .72rem; color: var(--muted);
+    background: rgba(255,255,255,.04); border: 1px solid var(--line);
+    padding: .3rem .7rem; border-radius: 999px;
+  }
+  input[type=file] { display: none; }
+
+  .tabs { display: flex; gap: .5rem; margin-top: 2rem; }
+  .tab {
+    flex: 1; padding: .7rem 1rem; border-radius: 12px 12px 0 0; cursor: pointer;
+    border: 1px solid var(--line); border-bottom: 0; background: rgba(255,255,255,.03);
+    color: var(--muted); font-weight: 600; font-size: .9rem; text-align: center;
+    transition: color .2s, background .2s;
+  }
+  .tab.active { color: var(--text); background: var(--panel-2); border-color: var(--accent); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .panel.paste { margin-top: 0; }
+  .paste .drop { margin-top: 0; border-radius: 0 0 20px 20px; padding: 1.2rem; }
+  textarea {
+    width: 100%; min-height: 230px; resize: vertical; color: var(--text);
+    background: #0e1426; border: 1px solid var(--line); border-radius: 12px;
+    padding: 1rem; font: inherit; font-size: .92rem; line-height: 1.5;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  .paste-actions { display: flex; align-items: center; gap: .9rem; margin-top: .9rem; flex-wrap: wrap; }
+  .paste-hint { color: var(--muted); font-size: .78rem; }
+
+  .review-toggle {
+    display: flex; align-items: center; gap: .55rem; cursor: pointer;
+    color: var(--text); font-size: .85rem; font-weight: 600; user-select: none;
+  }
+  .review-toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  .review-toggle .tag {
+    font-size: .64rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); background: rgba(45,91,255,.14); border: 1px solid rgba(45,91,255,.35);
+    padding: .12rem .42rem; border-radius: 999px;
+  }
+  .notes {
+    border-top: 1px solid var(--line); padding: 1rem 1.3rem;
+    display: none; background: rgba(54,211,153,.05);
+  }
+  .notes.show { display: block; }
+  .notes h3 {
+    margin: 0 0 .5rem; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ok);
+  }
+  .notes ul { margin: 0; padding-left: 1.1rem; }
+  .notes li { color: var(--text); font-size: .85rem; margin: .3rem 0; }
+
+  .status { margin-top: 1.4rem; min-height: 1.4rem; color: var(--muted); font-size: .9rem; }
+  .status.err { color: #ff6b6b; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent);
+    border-radius: 50%; display: inline-block; vertical-align: -3px; margin-right: .5rem;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result {
+    margin-top: 1.6rem; border: 1px solid var(--line); border-radius: 18px;
+    background: var(--panel); overflow: hidden; opacity: 0; transform: translateY(10px);
+    transition: opacity .4s var(--ease), transform .4s var(--ease);
+  }
+  .result.show { opacity: 1; transform: none; }
+  .result .top { padding: 1.2rem 1.3rem; display: flex; flex-wrap: wrap; gap: 1rem 1.4rem; align-items: baseline; }
+  .result .top h2 { margin: 0; font-size: 1.15rem; flex: 1 1 100%; }
+  .meta { color: var(--muted); font-size: .82rem; }
+  .meta b { color: var(--text); font-weight: 600; }
+  .badge { color: var(--ok); }
+  .actions { display: flex; flex-wrap: wrap; gap: .7rem; padding: 0 1.3rem 1.3rem; }
+  .btn {
+    border: 0; cursor: pointer; font: inherit; font-weight: 600; font-size: .9rem;
+    padding: .7rem 1.1rem; border-radius: 11px; text-decoration: none; color: #fff;
+    background: var(--accent); transition: transform .2s var(--ease), filter .2s;
+  }
+  .btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  iframe { width: 100%; height: 420px; border: 0; border-top: 1px solid var(--line); background: #fff; }
+  footer { margin-top: 2rem; color: var(--muted); font-size: .76rem; }
+  footer code { color: var(--text); background: rgba(255,255,255,.05); padding: .1rem .4rem; border-radius: 6px; }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="kicker">word2ppt</div>
+      <h1>Turn a document<br><span>into a real presentation.</span></h1>
+      <p class="lede">Drop a Word or text file. It's restructured into clean slides —
+        with flow diagrams for any process — and exported as an editable
+        <b>PowerPoint</b> and a shareable <b>HTML deck</b>.</p>
+    </header>
+
+    <div class="tabs">
+      <div class="tab active" id="tab-paste" data-target="panel-paste">✍ Paste text</div>
+      <div class="tab" id="tab-upload" data-target="panel-upload">⬆ Upload file</div>
+    </div>
+
+    <div class="panel paste active" id="panel-paste">
+      <label class="drop" style="cursor:auto">
+        <textarea id="text" placeholder="Paste your document here — headings (#, ##), bullet lists, and Markdown tables become slides and flow diagrams…"></textarea>
+        <div class="paste-actions">
+          <button class="btn" id="gen-text" type="button">Generate slides</button>
+          <label class="review-toggle">
+            <input type="checkbox" id="review" />
+            Agentic review <span class="tag">Groq AI</span>
+          </label>
+          <span class="paste-hint" id="aimode">checking engine…</span>
+        </div>
+      </label>
+    </div>
+
+    <div class="panel" id="panel-upload">
+      <label class="drop" id="drop">
+        <div class="icon">⬆</div>
+        <strong>Drop a file here, or click to choose</strong>
+        <div class="hint">.docx · .txt · .md — up to 20&nbsp;MB</div>
+        <input type="file" id="file" accept=".docx,.txt,.md,.markdown,.text" />
+      </label>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="result" id="result">
+      <div class="top">
+        <h2 id="r-title"></h2>
+        <span class="meta"><b id="r-slides">0</b> slides</span>
+        <span class="meta"><b id="r-diagrams">0</b> diagrams</span>
+        <span class="meta">engine: <b class="badge" id="r-engine"></b></span>
+      </div>
+      <div class="notes" id="notes">
+        <h3>Agentic review notes</h3>
+        <ul id="notes-list"></ul>
+      </div>
+      <div class="actions">
+        <a class="btn" id="dl-pptx" download>Download .pptx</a>
+        <a class="btn ghost" id="dl-html" download>Download .html</a>
+        <a class="btn ghost" id="open-html" target="_blank">Open deck ↗</a>
+      </div>
+      <iframe id="preview" title="Deck preview"></iframe>
+    </div>
+
+    <footer>
+      No API key? It still works with a built-in heuristic. For AI-restructured slides,
+      set <code>GROQ_API_KEY</code> (free at console.groq.com) before starting the server.
+    </footer>
+  </div>
+
+<script>
+  const drop = document.getElementById('drop');
+  const fileInput = document.getElementById('file');
+  const statusEl = document.getElementById('status');
+  const result = document.getElementById('result');
+
+  fetch('/api/health').then(r => r.json()).then(h => {
+    document.getElementById('aimode').textContent =
+      h.ai_enabled ? `AI engine: ${h.model}` : 'heuristic engine (no API key set)';
+  }).catch(() => {});
+
+  // Tab switching between paste and upload.
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target).classList.add('active');
+    });
+  });
+
+  // Generate from pasted text.
+  document.getElementById('gen-text').addEventListener('click', async () => {
+    const text = document.getElementById('text').value.trim();
+    if (!text) { setStatus('⚠ Paste some text first.', true); return; }
+    result.classList.remove('show');
+    setStatus('<span class="spinner"></span>Generating slides from pasted text …');
+    try {
+      const fd = new FormData();
+      fd.append('text', text);
+      fd.append('review', document.getElementById('review').checked);
+      const res = await fetch('/api/convert-text', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Conversion failed');
+      showResult(data);
+      setStatus('Done.');
+    } catch (err) {
+      setStatus('⚠ ' + err.message, true);
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+  drop.addEventListener('drop', e => {
+    const f = e.dataTransfer.files?.[0];
+    if (f) upload(f);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) upload(fileInput.files[0]);
+  });
+
+  function setStatus(msg, isErr) {
+    statusEl.className = 'status' + (isErr ? ' err' : '');
+    statusEl.innerHTML = msg;
+  }
+
+  async function upload(file) {
+    result.classList.remove('show');
+    setStatus('<span class="spinner"></span>Converting <b>' + file.name + '</b> …');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('review', document.getElementById('review').checked);
+    try {
+      const res = await fetch('/api/convert', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Conversion failed');
+      showResult(data);
+      setStatus('Done.');
+    } catch (err) {
+      setStatus('⚠ ' + err.message, true);
+    }
+  }
+
+  let objectUrls = [];
+  function b64ToBlob(b64, type) {
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type });
+  }
+
+  function showResult(d) {
+    objectUrls.forEach(u => URL.revokeObjectURL(u));
+    objectUrls = [];
+
+    document.getElementById('r-title').textContent = d.title;
+    document.getElementById('r-slides').textContent = d.slide_count;
+    document.getElementById('r-diagrams').textContent = d.diagram_count;
+    document.getElementById('r-engine').textContent = d.strategy;
+
+    const base = d.filename || 'presentation';
+    const htmlUrl = URL.createObjectURL(new Blob([d.html], { type: 'text/html' }));
+    const pptxUrl = URL.createObjectURL(b64ToBlob(d.pptx_base64, d.pptx_media_type));
+    objectUrls.push(htmlUrl, pptxUrl);
+
+    const dlPptx = document.getElementById('dl-pptx');
+    dlPptx.href = pptxUrl; dlPptx.download = base + '.pptx';
+    const dlHtml = document.getElementById('dl-html');
+    dlHtml.href = htmlUrl; dlHtml.download = base + '.html';
+    document.getElementById('open-html').href = htmlUrl;
+
+    const preview = document.getElementById('preview');
+    preview.removeAttribute('src');
+    preview.srcdoc = d.html;
+
+    const notes = document.getElementById('notes');
+    const list = document.getElementById('notes-list');
+    list.innerHTML = '';
+    if (d.review_notes && d.review_notes.length) {
+      d.review_notes.forEach(n => {
+        const li = document.createElement('li');
+        li.textContent = n;
+        list.appendChild(li);
+      });
+      notes.classList.add('show');
+    } else {
+      notes.classList.remove('show');
+    }
+    result.classList.add('show');
+  }
+</script>
+</body>
+</html>
