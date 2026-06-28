@@ -291,7 +291,13 @@ _SYSTEM_PROMPT = textwrap.dedent(
 _QUOTA_ERROR_HINTS = ("rate_limit", "429", "413", "too large", "tokens per", "quota")
 
 
-def groq_json(system: str, user: str, settings: Settings, retries: int = 3) -> dict:
+def groq_json(
+    system: str,
+    user: str,
+    settings: Settings,
+    retries: int = 3,
+    max_tokens: int | None = None,
+) -> dict:
     """Call Groq in JSON mode with retries and automatic model fallback.
 
     Tries the primary model; if it hits a rate/size limit, switches to the
@@ -313,7 +319,7 @@ def groq_json(system: str, user: str, settings: Settings, retries: int = 3) -> d
                     model=model,
                     temperature=0.2,
                     # Bounded output keeps input+output under the free-tier TPM limit.
-                    max_tokens=settings.groq_max_tokens,
+                    max_tokens=max_tokens or settings.groq_max_tokens,
                     response_format={"type": "json_object"},
                     messages=[
                         {"role": "system", "content": system},

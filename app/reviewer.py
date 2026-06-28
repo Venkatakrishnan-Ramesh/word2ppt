@@ -65,9 +65,10 @@ def review_deck(
     if not settings.ai_enabled:
         return deck, ["Agentic review skipped — no GROQ_API_KEY configured."]
 
-    # The review sends the draft deck AND the source, so keep the source compact
-    # to stay within Groq token-per-day limits (the draft already carries content).
-    source_cap = min(settings.groq_source_chars, 6000)
+    # The review sends the draft deck AND the source, so keep both compact: the
+    # smaller Groq model has a ~6k tokens/minute window, and the draft already
+    # carries most of the content.
+    source_cap = min(settings.groq_source_chars, 2500)
     user_prompt = (
         f"Slide limit: at most {max_slides} slides.\n\n"
         "ORIGINAL SOURCE (excerpt):\n"
@@ -76,8 +77,8 @@ def review_deck(
         f"{_deck_to_json(deck)}"
     )
     try:
-        # Reuse the planner's retrying Groq JSON helper.
-        payload = groq_json(_REVIEW_SYSTEM, user_prompt, settings)
+        # Smaller output budget so the whole review request fits the free-tier window.
+        payload = groq_json(_REVIEW_SYSTEM, user_prompt, settings, max_tokens=2500)
     except Exception as exc:  # noqa: BLE001 — never let review break a conversion
         return deck, [f"Agentic review skipped (error: {exc})."]
 
