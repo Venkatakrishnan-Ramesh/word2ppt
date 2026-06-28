@@ -11,6 +11,7 @@ heuristic if the AI path fails, so a conversion never hard-errors on the model.
 from __future__ import annotations
 
 import json
+import re
 import textwrap
 
 from .config import (
@@ -37,11 +38,65 @@ _PROCESS_KEYWORDS = (
     "how it works",
 )
 _MAX_DIAGRAM_STEPS = 8
+# Routes/corridors can be longer than a generic process before we split them.
+_MAX_ROUTE_STEPS = 14
+# Split a sequence written inline as "A - B - C" / "A → B → C".
+_ROUTE_SPLIT_RE = re.compile(r"\s*(?:->|→|–|—|»|>|–|—|\s-\s)\s*")
 
 
 def _truncate(text: str, limit: int) -> str:
     text = " ".join(text.split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def _route_steps(text: str) -> list[str]:
+    """Return ordered nodes if `text` reads like an inline route/sequence, else []."""
+    cleaned = text.replace("**", "").strip().rstrip(".")
+    # Drop a leading "... connect:" style lead-in before the actual sequence.
+    if ":" in cleaned and len(cleaned.split(":", 1)[0]) < 40:
+        cleaned = cleaned.split(":", 1)[1].strip()
+    parts = [p.strip(" .•-") for p in _ROUTE_SPLIT_RE.split(cleaned)]
+    parts = [p for p in parts if p]
+    if not (4 <= len(parts) <= 25):
+        return []
+    # Each node should be short and place/step-like, not a full sentence.
+    for part in parts:
+        if len(part) > 45 or "." in part or len(part.split()) > 7:
+            return []
+    return parts[:_MAX_ROUTE_STEPS]
+
+
+def extract_route_slides(blocks: list[Block]) -> list[Slide]:
+    """Find inline route/corridor lines in the source and render them as flow diagrams.
+
+    Deterministic and engine-independent: this guarantees a sequence written as
+    "A - B - C - ... - Z" becomes a real flow diagram, regardless of what the LLM
+    chose to do.
+    """
+    slides: list[Slide] = []
+    seen: set[tuple[str, ...]] = set()
+    for block in blocks:
+        if block.kind not in ("text", "bullet", "title", "heading"):
+            continue
+        steps = _route_steps(block.text)
+        if not steps:
+            continue
+        key = tuple(steps)
+        if key in seen:
+            continue
+        seen.add(key)
+        title = "Corridor Route" if steps[0][:1].isalpha() else "Route"
+        slides.append(
+            Slide(
+                title=title,
+                diagram=Diagram(
+                    type="flow",
+                    direction="down",
+                    steps=[_truncate(s, 40) for s in steps],
+                ),
+            )
+        )
+    return slides
 
 
 def _clean_diagram(raw: object) -> Diagram | None:

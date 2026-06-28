@@ -11,7 +11,8 @@ from .html_builder import render_html
 from .models import Deck
 from .pptx_builder import render_pptx
 from .reviewer import review_deck
-from .slide_planner import _paginate_tables, plan_deck
+from .config import MAX_SLIDES
+from .slide_planner import _paginate_tables, extract_route_slides, plan_deck
 from .text_parser import parse_text
 
 SUPPORTED_EXTS = {".docx", ".txt", ".md", ".markdown", ".text"}
@@ -53,6 +54,14 @@ def convert(
         deck, notes = review_deck(deck, blocks, settings)
         deck = _paginate_tables(deck)  # reviewer may have reshaped tables
         review_notes = tuple(notes)
+
+    # Deterministically turn inline route/sequence lines into flow-diagram slides,
+    # independent of what the LLM chose. Placed right after the opening slide.
+    route_slides = extract_route_slides(blocks)
+    if route_slides:
+        head, tail = deck.slides[:1], deck.slides[1:]
+        merged = (head + route_slides + tail)[:MAX_SLIDES]
+        deck = Deck(title=deck.title, subtitle=deck.subtitle, slides=merged)
 
     return ConversionResult(
         deck=deck,
