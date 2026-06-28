@@ -63,6 +63,7 @@ async def convert_endpoint(
     diagrams: bool = Form(False),
     max_slides: int = Form(0),
     instructions: str = Form(""),
+    target_slides: int = Form(0),
 ) -> JSONResponse:
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED_EXTS:
@@ -79,7 +80,14 @@ async def convert_endpoint(
 
     source_name = Path(file.filename or "").stem or "Presentation"
     return _convert_bytes(
-        data, suffix, review, diagrams, max_slides, instructions, source_name
+        data,
+        suffix,
+        review,
+        diagrams,
+        max_slides,
+        instructions,
+        source_name,
+        target_slides,
     )
 
 
@@ -90,6 +98,7 @@ async def convert_text_endpoint(
     diagrams: bool = Form(False),
     max_slides: int = Form(0),
     instructions: str = Form(""),
+    target_slides: int = Form(0),
 ) -> JSONResponse:
     content = text.strip()
     if not content:
@@ -105,6 +114,7 @@ async def convert_text_endpoint(
         max_slides,
         instructions,
         "Pasted text",
+        target_slides,
     )
 
 
@@ -121,6 +131,7 @@ def _convert_bytes(
     max_slides: int,
     instructions: str = "",
     source_name: str = "",
+    target_slides: int = 0,
 ) -> JSONResponse:
     """Run the pipeline on the source bytes and return artifacts inline."""
     slide_cap = clamp_max_slides(max_slides)
@@ -131,8 +142,14 @@ def _convert_bytes(
 
     try:
         result = convert(
-            source_path, settings, review=review, diagrams=diagrams,
-            max_slides=slide_cap, instructions=instructions, source_name=source_name,
+            source_path,
+            settings,
+            review=review,
+            diagrams=diagrams,
+            max_slides=slide_cap,
+            instructions=instructions,
+            source_name=source_name,
+            target_slides=target_slides,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

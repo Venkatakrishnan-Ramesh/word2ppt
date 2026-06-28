@@ -210,10 +210,10 @@
 
     <section id="feedback" style="margin-top:2rem; border:1px solid var(--line);
       border-radius:16px; background:var(--panel); padding:1.2rem 1.3rem;">
-      <h3 style="margin:0 0 .2rem; font-size:1rem;">Feedback / revise deck</h3>
+      <h3 style="margin:0 0 .2rem; font-size:1rem;">Review this deck</h3>
       <p style="margin:0 0 .8rem; color:var(--muted); font-size:.85rem;">
-        Use <b>Revise deck</b> to regenerate the PPT with your notes. Use
-        <b>Send feedback</b> to log comments and auto-revise the deck.</p>
+        Add a note, then regenerate the deck with that note applied. The slide count
+        stays close to the current version unless you change it.</p>
       <div id="stars" style="font-size:1.5rem; color:#ffd166; letter-spacing:.15rem; cursor:pointer; user-select:none;">
         <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
       </div>
@@ -221,8 +221,8 @@
         style="width:100%; min-height:90px; margin-top:.7rem; resize:vertical; color:var(--text);
         background:#0e1426; border:1px solid var(--line); border-radius:10px; padding:.8rem; font:inherit;"></textarea>
       <div style="display:flex; align-items:center; gap:.9rem; margin-top:.7rem;">
-        <button class="btn" id="fb-apply" type="button">Revise deck</button>
-        <button class="btn ghost" id="fb-send" type="button">Send feedback</button>
+        <button class="btn" id="fb-apply" type="button">Apply note</button>
+        <button class="btn ghost" id="fb-send" type="button">Save note</button>
         <span id="fb-msg" style="color:var(--ok); font-size:.85rem;"></span>
       </div>
     </section>
@@ -263,11 +263,11 @@
       const d = await res.json();
       if (!res.ok) throw new Error(d.detail || 'Failed');
       msg.style.color = 'var(--muted)';
-      msg.textContent = comment ? 'Feedback saved. Revising deck…' : 'Feedback saved.';
+      msg.textContent = comment ? 'Saving your note and updating the deck…' : 'Note saved.';
       if (comment) {
         const data = await convertWithInstructions(lastSource, comment);
-        showResult(data, 'Feedback incorporated as review instructions.');
-        msg.style.color = 'var(--ok)'; msg.textContent = 'Feedback saved and deck revised.';
+        showResult(data, 'Your note was applied to this version.');
+        msg.style.color = 'var(--ok)'; msg.textContent = 'Note saved and deck updated.';
         setStatus('Done.');
       } else {
         msg.style.color = 'var(--ok)'; msg.textContent = d.message || 'Thanks!';
@@ -281,13 +281,13 @@
   document.getElementById('fb-apply').addEventListener('click', async () => {
     const comment = document.getElementById('fb-comment').value.trim();
     const msg = document.getElementById('fb-msg');
-    if (!comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Add revision notes first.'; return; }
+    if (!comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Add a note first.'; return; }
     if (!lastSource) { msg.style.color = '#ff6b6b'; msg.textContent = 'Generate a deck first.'; return; }
-    msg.style.color = 'var(--muted)'; msg.textContent = 'Revising deck from your feedback…';
+    msg.style.color = 'var(--muted)'; msg.textContent = 'Applying your note and regenerating the deck…';
     try {
       const data = await convertWithInstructions(lastSource, comment);
-      showResult(data, 'Feedback incorporated as review instructions.');
-      msg.style.color = 'var(--ok)'; msg.textContent = 'Deck revised.';
+      showResult(data, 'Your note was applied to this version.');
+      msg.style.color = 'var(--ok)'; msg.textContent = 'Deck updated.';
       setStatus('Done.');
     } catch (e) {
       msg.style.color = '#ff6b6b'; msg.textContent = e.message;
