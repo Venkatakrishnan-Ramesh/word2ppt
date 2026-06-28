@@ -209,9 +209,10 @@
 
     <section id="feedback" style="margin-top:2rem; border:1px solid var(--line);
       border-radius:16px; background:var(--panel); padding:1.2rem 1.3rem;">
-      <h3 style="margin:0 0 .2rem; font-size:1rem;">Feedback</h3>
+      <h3 style="margin:0 0 .2rem; font-size:1rem;">Feedback / revise deck</h3>
       <p style="margin:0 0 .8rem; color:var(--muted); font-size:.85rem;">
-        Help improve word2ppt — rate it and tell us what to fix.</p>
+        Use <b>Revise deck</b> to regenerate the PPT with your notes. Use
+        <b>Send feedback</b> to log comments and auto-revise the deck.</p>
       <div id="stars" style="font-size:1.5rem; color:#ffd166; letter-spacing:.15rem; cursor:pointer; user-select:none;">
         <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
       </div>
@@ -219,7 +220,8 @@
         style="width:100%; min-height:90px; margin-top:.7rem; resize:vertical; color:var(--text);
         background:#0e1426; border:1px solid var(--line); border-radius:10px; padding:.8rem; font:inherit;"></textarea>
       <div style="display:flex; align-items:center; gap:.9rem; margin-top:.7rem;">
-        <button class="btn" id="fb-send" type="button">Send feedback</button>
+        <button class="btn" id="fb-apply" type="button">Revise deck</button>
+        <button class="btn ghost" id="fb-send" type="button">Send feedback</button>
         <span id="fb-msg" style="color:var(--ok); font-size:.85rem;"></span>
       </div>
     </section>
@@ -234,6 +236,7 @@
   const fileInput = document.getElementById('file');
   const statusEl = document.getElementById('status');
   const result = document.getElementById('result');
+  let lastSource = null;
 
   // --- Feedback widget ---
   let fbRating = 0;
@@ -248,6 +251,7 @@
     const comment = document.getElementById('fb-comment').value.trim();
     const msg = document.getElementById('fb-msg');
     if (!fbRating && !comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Add a rating or a comment.'; return; }
+    if (!lastSource) { msg.style.color = '#ff6b6b'; msg.textContent = 'Generate a deck first.'; return; }
     const fd = new FormData();
     fd.append('rating', fbRating);
     fd.append('comment', comment);
@@ -256,8 +260,33 @@
       const res = await fetch('/api/feedback', { method: 'POST', body: fd });
       const d = await res.json();
       if (!res.ok) throw new Error(d.detail || 'Failed');
-      msg.style.color = 'var(--ok)'; msg.textContent = d.message || 'Thanks!';
+      msg.style.color = 'var(--muted)';
+      msg.textContent = comment ? 'Feedback saved. Revising deck…' : 'Feedback saved.';
+      if (comment) {
+        const data = await convertWithInstructions(lastSource, comment);
+        showResult(data);
+        msg.style.color = 'var(--ok)'; msg.textContent = 'Feedback saved and deck revised.';
+        setStatus('Done.');
+      } else {
+        msg.style.color = 'var(--ok)'; msg.textContent = d.message || 'Thanks!';
+      }
       document.getElementById('fb-comment').value = ''; fbRating = 0; paintStars(0);
+    } catch (e) {
+      msg.style.color = '#ff6b6b'; msg.textContent = e.message;
+    }
+  });
+
+  document.getElementById('fb-apply').addEventListener('click', async () => {
+    const comment = document.getElementById('fb-comment').value.trim();
+    const msg = document.getElementById('fb-msg');
+    if (!comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Add revision notes first.'; return; }
+    if (!lastSource) { msg.style.color = '#ff6b6b'; msg.textContent = 'Generate a deck first.'; return; }
+    msg.style.color = 'var(--muted)'; msg.textContent = 'Revising deck from your feedback…';
+    try {
+      const data = await convertWithInstructions(lastSource, comment);
+      showResult(data);
+      msg.style.color = 'var(--ok)'; msg.textContent = 'Deck revised.';
+      setStatus('Done.');
     } catch (e) {
       msg.style.color = '#ff6b6b'; msg.textContent = e.message;
     }
@@ -282,6 +311,7 @@
   document.getElementById('gen-text').addEventListener('click', async () => {
     const text = document.getElementById('text').value.trim();
     if (!text) { setStatus('⚠ Paste some text first.', true); return; }
+    lastSource = { kind: 'text', value: text };
     result.classList.remove('show');
     setStatus('<span class="spinner"></span>Generating slides from pasted text …');
     try {
@@ -318,6 +348,7 @@
   }
 
   async function upload(file) {
+    lastSource = { kind: 'file', value: file };
     result.classList.remove('show');
     setStatus('<span class="spinner"></span>Converting <b>' + file.name + '</b> …');
     const fd = new FormData();
@@ -334,6 +365,26 @@
     } catch (err) {
       setStatus('⚠ ' + err.message, true);
     }
+  }
+
+  async function convertWithInstructions(source, instructions) {
+    const fd = new FormData();
+    fd.append('review', document.getElementById('review').checked);
+    fd.append('diagrams', document.getElementById('diagrams').checked);
+    fd.append('max_slides', document.getElementById('maxslides').value || 80);
+    fd.append('instructions', instructions);
+    if (source.kind === 'text') {
+      fd.append('text', source.value);
+      const res = await fetch('/api/convert-text', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Conversion failed');
+      return data;
+    }
+    fd.append('file', source.value);
+    const res = await fetch('/api/convert', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Conversion failed');
+    return data;
   }
 
   let objectUrls = [];

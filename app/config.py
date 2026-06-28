@@ -37,6 +37,8 @@ class Settings:
     groq_api_key: str | None
     groq_model: str
     groq_fallback_model: str | None
+    gemini_api_key: str | None
+    gemini_model: str
     max_upload_bytes: int
     groq_max_tokens: int
     groq_source_chars: int
@@ -44,7 +46,7 @@ class Settings:
 
     @property
     def ai_enabled(self) -> bool:
-        return bool(self.groq_api_key)
+        return bool(self.groq_api_key or self.gemini_api_key)
 
 
 def load_settings() -> Settings:
@@ -63,6 +65,9 @@ def load_settings() -> Settings:
         groq_fallback_model=os.environ.get(
             "GROQ_FALLBACK_MODEL", "llama-3.1-8b-instant"
         ),
+        # Google Gemini free tier — used as a final fallback when Groq is exhausted.
+        gemini_api_key=os.environ.get("GEMINI_API_KEY") or None,
+        gemini_model=os.environ.get("GEMINI_MODEL", "gemini-2.0-flash"),
         max_upload_bytes=int(os.environ.get("MAX_UPLOAD_BYTES", 20 * 1024 * 1024)),
         groq_max_tokens=int(os.environ.get("GROQ_MAX_TOKENS", 3000)),
         groq_source_chars=int(os.environ.get("GROQ_SOURCE_CHARS", 7000)),

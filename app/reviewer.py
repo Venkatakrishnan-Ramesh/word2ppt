@@ -60,17 +60,24 @@ def review_deck(
     blocks: list[Block],
     settings: Settings,
     max_slides: int = MAX_SLIDES,
+    instructions: str = "",
 ) -> tuple[Deck, list[str]]:
     """Run one agentic review/revision pass. Returns (revised_deck, notes)."""
     if not settings.ai_enabled:
-        return deck, ["Agentic review skipped — no GROQ_API_KEY configured."]
+        return deck, ["Agentic review skipped — no AI provider configured."]
 
     # The review sends the draft deck AND the source, so keep both compact: the
     # smaller Groq model has a ~6k tokens/minute window, and the draft already
     # carries most of the content.
     source_cap = min(settings.groq_source_chars, 2500)
+    extra = (
+        f"USER INSTRUCTIONS (apply these): {instructions.strip()}\n\n"
+        if instructions.strip()
+        else ""
+    )
     user_prompt = (
-        f"Slide limit: at most {max_slides} slides.\n\n"
+        f"Slide limit: at most {max_slides} slides.\n"
+        f"{extra}"
         "ORIGINAL SOURCE (excerpt):\n"
         f"{blocks_to_plain_text(blocks, source_cap)}\n\n"
         "DRAFT DECK (JSON):\n"

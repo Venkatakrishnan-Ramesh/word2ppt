@@ -23,6 +23,7 @@ from .config import (
     Settings,
 )
 from .docx_parser import Block, blocks_to_plain_text, document_title
+from .llm import complete_json
 from .models import Deck, Diagram, Slide, Table
 
 # Headings hinting that the content under them is a sequential process.
@@ -286,54 +287,9 @@ _SYSTEM_PROMPT = textwrap.dedent(
 ).strip()
 
 
-# Error fragments that mean "this model is out of quota / request too big" — when
-# we see these we switch to the fallback model rather than retrying the same one.
-_QUOTA_ERROR_HINTS = ("rate_limit", "429", "413", "too large", "tokens per", "quota")
-
-
-def groq_json(
-    system: str,
-    user: str,
-    settings: Settings,
-    retries: int = 3,
-    max_tokens: int | None = None,
-) -> dict:
-    """Call Groq in JSON mode with retries and automatic model fallback.
-
-    Tries the primary model; if it hits a rate/size limit, switches to the
-    fallback model (which has a separate, larger free-tier quota) before giving
-    up and letting the caller drop to the heuristic.
-    """
-    from groq import Groq  # imported lazily so the heuristic path needs no dep
-
-    client = Groq(api_key=settings.groq_api_key)
-    models = [settings.groq_model]
-    if settings.groq_fallback_model and settings.groq_fallback_model not in models:
-        models.append(settings.groq_fallback_model)
-
-    last_error: Exception | None = None
-    for model in models:
-        for attempt in range(retries):
-            try:
-                completion = client.chat.completions.create(
-                    model=model,
-                    temperature=0.2,
-                    # Bounded output keeps input+output under the free-tier TPM limit.
-                    max_tokens=max_tokens or settings.groq_max_tokens,
-                    response_format={"type": "json_object"},
-                    messages=[
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user},
-                    ],
-                )
-                return json.loads(completion.choices[0].message.content)
-            except Exception as exc:  # noqa: BLE001 — retry / fall back per error type
-                last_error = exc
-                if any(h in str(exc).lower() for h in _QUOTA_ERROR_HINTS):
-                    break  # quota/size issue — don't retry this model, try the next
-                if attempt < retries - 1:
-                    time.sleep(0.7 * (attempt + 1))
-    raise RuntimeError(f"Groq call failed (tried {models}): {last_error}")
+# Backwards-compatible alias: generation/review go through the provider layer,
+# which tries Groq (primary + fallback model) then Gemini before giving up.
+groq_json = complete_json
 
 
 def groq_plan(
@@ -341,13 +297,19 @@ def groq_plan(
     fallback_title: str,
     settings: Settings,
     max_slides: int = MAX_SLIDES,
+    instructions: str = "",
 ) -> Deck:
-    """Ask Groq to restructure the document. Raises only after retries are exhausted."""
+    """Ask the LLM to restructure the document. Raises only after all providers fail."""
     source = blocks_to_plain_text(blocks, settings.groq_source_chars)
-    payload = groq_json(
+    extra = (
+        f"\nUSER INSTRUCTIONS (follow these closely): {instructions.strip()}\n"
+        if instructions.strip()
+        else ""
+    )
+    payload = complete_json(
         _SYSTEM_PROMPT,
         f"Document title hint: {fallback_title}\n"
-        f"Produce at most {max_slides} slides.\n\n{source}",
+        f"Produce at most {max_slides} slides.{extra}\n\n{source}",
         settings,
     )
 
@@ -393,15 +355,16 @@ def plan_deck(
     fallback_title: str,
     settings: Settings,
     max_slides: int = MAX_SLIDES,
+    instructions: str = "",
 ) -> tuple[Deck, str]:
     """Build a Deck using the best available strategy.
 
-    Returns the deck plus the strategy name actually used ("groq" | "heuristic").
+    Returns the deck plus the strategy name actually used ("ai" | "heuristic").
     """
     if settings.ai_enabled:
         try:
-            deck = groq_plan(blocks, fallback_title, settings, max_slides)
-            return _paginate_tables(deck, max_slides), "groq"
+            deck = groq_plan(blocks, fallback_title, settings, max_slides, instructions)
+            return _paginate_tables(deck, max_slides), "ai"
         except Exception:  # noqa: BLE001 — any failure should degrade gracefully
             pass
     deck = heuristic_plan(blocks, fallback_title, max_slides)

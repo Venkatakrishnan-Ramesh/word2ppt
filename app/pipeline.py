@@ -48,17 +48,22 @@ def convert(
     review: bool = False,
     diagrams: bool = False,
     max_slides: int = MAX_SLIDES,
+    instructions: str = "",
 ) -> ConversionResult:
     blocks = parse_source(source)
     if not blocks:
         raise ValueError("No readable content found in the uploaded file.")
 
     fallback_title = source.stem.replace("_", " ").replace("-", " ").strip().title()
-    deck, strategy = plan_deck(blocks, fallback_title, settings, max_slides)
+    deck, strategy = plan_deck(
+        blocks, fallback_title, settings, max_slides, instructions=instructions
+    )
 
     review_notes: tuple[str, ...] = ()
     if review:
-        deck, notes = review_deck(deck, blocks, settings, max_slides)
+        deck, notes = review_deck(
+            deck, blocks, settings, max_slides, instructions=instructions
+        )
         deck = _paginate_tables(deck, max_slides)  # reviewer may have reshaped tables
         review_notes = tuple(notes)
 
