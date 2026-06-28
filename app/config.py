@@ -64,8 +64,8 @@ def load_settings() -> Settings:
             "GROQ_FALLBACK_MODEL", "llama-3.1-8b-instant"
         ),
         max_upload_bytes=int(os.environ.get("MAX_UPLOAD_BYTES", 20 * 1024 * 1024)),
-        groq_max_tokens=int(os.environ.get("GROQ_MAX_TOKENS", 4000)),
-        groq_source_chars=int(os.environ.get("GROQ_SOURCE_CHARS", 9000)),
+        groq_max_tokens=int(os.environ.get("GROQ_MAX_TOKENS", 3000)),
+        groq_source_chars=int(os.environ.get("GROQ_SOURCE_CHARS", 7000)),
         # Optional: POST each feedback submission here (Slack/Discord/Sheets webhook).
         feedback_webhook_url=os.environ.get("FEEDBACK_WEBHOOK_URL") or None,
     )
