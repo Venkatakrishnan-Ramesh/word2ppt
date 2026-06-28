@@ -261,7 +261,9 @@ _SYSTEM_PROMPT = textwrap.dedent(
     - Never invent data, figures, or claims not present in the source.
     - Keep the original meaning and ordering of ideas.
     - Add brief, neutral speaker notes per slide when helpful.
-    - Use one slide per distinct topic; do not exceed the slide limit the user gives.
+    - Create a separate slide for each distinct topic or document section. For long,
+      detailed documents, use MORE slides (split dense sections) and approach the
+      user's slide limit rather than over-condensing. Never exceed the limit.
     DIAGRAMS:
     - When a slide describes a PROCESS, WORKFLOW, SEQUENCE, or ordered STEPS,
       represent it as a flow diagram instead of bullets.
@@ -296,6 +298,8 @@ def groq_json(system: str, user: str, settings: Settings, retries: int = 3) -> d
             completion = client.chat.completions.create(
                 model=settings.groq_model,
                 temperature=0.2,
+                # Allow large JSON so big decks (many slides) aren't truncated.
+                max_tokens=32000,
                 response_format={"type": "json_object"},
                 messages=[
                     {"role": "system", "content": system},
