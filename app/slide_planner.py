@@ -286,33 +286,48 @@ _SYSTEM_PROMPT = textwrap.dedent(
 ).strip()
 
 
+# Error fragments that mean "this model is out of quota / request too big" — when
+# we see these we switch to the fallback model rather than retrying the same one.
+_QUOTA_ERROR_HINTS = ("rate_limit", "429", "413", "too large", "tokens per", "quota")
+
+
 def groq_json(system: str, user: str, settings: Settings, retries: int = 3) -> dict:
-    """Call Groq in JSON mode with retries, so a transient failure or a single
-    malformed response does not silently drop the whole deck to the heuristic."""
+    """Call Groq in JSON mode with retries and automatic model fallback.
+
+    Tries the primary model; if it hits a rate/size limit, switches to the
+    fallback model (which has a separate, larger free-tier quota) before giving
+    up and letting the caller drop to the heuristic.
+    """
     from groq import Groq  # imported lazily so the heuristic path needs no dep
 
     client = Groq(api_key=settings.groq_api_key)
+    models = [settings.groq_model]
+    if settings.groq_fallback_model and settings.groq_fallback_model not in models:
+        models.append(settings.groq_fallback_model)
+
     last_error: Exception | None = None
-    for attempt in range(retries):
-        try:
-            completion = client.chat.completions.create(
-                model=settings.groq_model,
-                temperature=0.2,
-                # Keep output bounded so input+output stays under the Groq free-tier
-                # TPM limit (~12k); larger decks fall back to the heuristic engine.
-                max_tokens=settings.groq_max_tokens,
-                response_format={"type": "json_object"},
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-            )
-            return json.loads(completion.choices[0].message.content)
-        except Exception as exc:  # noqa: BLE001 — retry transient API/JSON errors
-            last_error = exc
-            if attempt < retries - 1:
-                time.sleep(0.7 * (attempt + 1))
-    raise RuntimeError(f"Groq call failed after {retries} attempts: {last_error}")
+    for model in models:
+        for attempt in range(retries):
+            try:
+                completion = client.chat.completions.create(
+                    model=model,
+                    temperature=0.2,
+                    # Bounded output keeps input+output under the free-tier TPM limit.
+                    max_tokens=settings.groq_max_tokens,
+                    response_format={"type": "json_object"},
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                )
+                return json.loads(completion.choices[0].message.content)
+            except Exception as exc:  # noqa: BLE001 — retry / fall back per error type
+                last_error = exc
+                if any(h in str(exc).lower() for h in _QUOTA_ERROR_HINTS):
+                    break  # quota/size issue — don't retry this model, try the next
+                if attempt < retries - 1:
+                    time.sleep(0.7 * (attempt + 1))
+    raise RuntimeError(f"Groq call failed (tried {models}): {last_error}")
 
 
 def groq_plan(

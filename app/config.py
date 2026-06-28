@@ -36,6 +36,7 @@ class Settings:
 
     groq_api_key: str | None
     groq_model: str
+    groq_fallback_model: str | None
     max_upload_bytes: int
     groq_max_tokens: int
     groq_source_chars: int
@@ -57,6 +58,11 @@ def load_settings() -> Settings:
         groq_api_key=os.environ.get("GROQ_API_KEY") or None,
         # Free, fast Groq model with JSON mode support.
         groq_model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        # Used automatically when the primary model hits a rate/size limit. The 8b
+        # model has a separate, larger free-tier daily quota.
+        groq_fallback_model=os.environ.get(
+            "GROQ_FALLBACK_MODEL", "llama-3.1-8b-instant"
+        ),
         max_upload_bytes=int(os.environ.get("MAX_UPLOAD_BYTES", 20 * 1024 * 1024)),
         groq_max_tokens=int(os.environ.get("GROQ_MAX_TOKENS", 4000)),
         groq_source_chars=int(os.environ.get("GROQ_SOURCE_CHARS", 9000)),
