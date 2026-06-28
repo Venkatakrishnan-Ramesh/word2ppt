@@ -9,7 +9,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 OUTPUT_DIR = BASE_DIR / "output"
-STATIC_DIR = BASE_DIR / "static"
+# UI lives in /public so Vercel serves it as a static asset at "/".
+STATIC_DIR = BASE_DIR / "public"
 
 # Slide content limits keep decks readable instead of dumping whole paragraphs.
 MAX_BULLETS_PER_SLIDE = 6
