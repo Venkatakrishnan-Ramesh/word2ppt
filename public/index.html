@@ -197,6 +197,7 @@
       </div>
       <div class="notes" id="notes">
         <h3>Agentic review notes</h3>
+        <p id="notes-meta" style="margin:.1rem 0 .6rem; color:var(--muted); font-size:.8rem;"></p>
         <ul id="notes-list"></ul>
       </div>
       <div class="actions">
@@ -264,7 +265,7 @@
       msg.textContent = comment ? 'Feedback saved. Revising deck…' : 'Feedback saved.';
       if (comment) {
         const data = await convertWithInstructions(lastSource, comment);
-        showResult(data);
+        showResult(data, 'Feedback incorporated as review instructions.');
         msg.style.color = 'var(--ok)'; msg.textContent = 'Feedback saved and deck revised.';
         setStatus('Done.');
       } else {
@@ -284,7 +285,7 @@
     msg.style.color = 'var(--muted)'; msg.textContent = 'Revising deck from your feedback…';
     try {
       const data = await convertWithInstructions(lastSource, comment);
-      showResult(data);
+      showResult(data, 'Feedback incorporated as review instructions.');
       msg.style.color = 'var(--ok)'; msg.textContent = 'Deck revised.';
       setStatus('Done.');
     } catch (e) {
@@ -397,7 +398,7 @@
     return new Blob([arr], { type });
   }
 
-  function showResult(d) {
+  function showResult(d, notesMetaText = '') {
     objectUrls.forEach(u => URL.revokeObjectURL(u));
     objectUrls = [];
 
@@ -427,14 +428,18 @@
     preview.srcdoc = d.html;
 
     const notes = document.getElementById('notes');
+    const notesMeta = document.getElementById('notes-meta');
     const list = document.getElementById('notes-list');
     list.innerHTML = '';
+    notesMeta.textContent = notesMetaText;
     if (d.review_notes && d.review_notes.length) {
       d.review_notes.forEach(n => {
         const li = document.createElement('li');
         li.textContent = n;
         list.appendChild(li);
       });
+      notes.classList.add('show');
+    } else if (notesMetaText) {
       notes.classList.add('show');
     } else {
       notes.classList.remove('show');
