@@ -42,12 +42,30 @@ Open <http://127.0.0.1:8000>, drop a file, download the `.pptx` / `.html`.
 
 ## API
 
+The app is **stateless** — each conversion returns both artifacts inline (HTML
+string + base64 PPTX), so it persists nothing on the server and runs on
+serverless platforms.
+
 | Method | Path | Purpose |
 |--------|------|---------|
-| `GET`  | `/` | Upload UI |
+| `GET`  | `/` | Web UI (paste-text or file upload) |
 | `GET`  | `/api/health` | Engine status (AI vs heuristic) |
-| `POST` | `/api/convert` | Multipart `file` → JSON with download links |
-| `GET`  | `/api/download/{name}` | Fetch a generated `.pptx` / `.html` |
+| `POST` | `/api/convert` | Multipart `file` (+ optional `review=true`) → JSON |
+| `POST` | `/api/convert-text` | Form `text` (+ optional `review=true`) → JSON |
+
+Response JSON includes: `title`, `filename`, `slide_count`, `diagram_count`,
+`table_count`, `strategy`, `reviewed`, `review_notes`, `html` (string), and
+`pptx_base64`.
+
+## Deploy to Vercel
+
+This repo is Vercel-ready (`vercel.json` + `api/index.py` serving the ASGI app):
+
+1. Import the repo at <https://vercel.com/new>.
+2. Add an environment variable **`GROQ_API_KEY`** (free from
+   <https://console.groq.com/keys>) — optional; without it the heuristic engine
+   is used. Optionally set `GROQ_MODEL`.
+3. Deploy. Every push to `main` redeploys automatically.
 
 ## Supported input
 
