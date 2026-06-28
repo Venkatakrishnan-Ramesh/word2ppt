@@ -193,7 +193,8 @@
         <h2 id="r-title"></h2>
         <span class="meta"><b id="r-slides">0</b> slides</span>
         <span class="meta"><b id="r-diagrams">0</b> diagrams</span>
-        <span class="meta">engine: <b class="badge" id="r-engine"></b></span>
+        <span class="meta" id="r-engine-wrap">Generated with <b class="badge" id="r-engine"></b></span>
+        <span class="meta"><b class="badge" id="r-reviewed"></b></span>
       </div>
       <div class="notes" id="notes">
         <h3>Agentic review notes</h3>
@@ -408,12 +409,14 @@
     document.getElementById('r-title').textContent = d.title;
     document.getElementById('r-slides').textContent = d.slide_count;
     document.getElementById('r-diagrams').textContent = d.diagram_count;
-    document.getElementById('r-engine').textContent = d.strategy;
+    document.getElementById('r-engine').textContent = d.ai_enabled ? 'AI' : 'smart rules';
+    document.getElementById('r-reviewed').textContent = d.reviewed
+      ? 'Reviewed'
+      : (notesMetaText ? 'Note applied' : '');
 
-    // Warn if Groq was available but the deck still fell back to the heuristic.
-    if (d.ai_enabled && d.strategy !== 'ai') {
-      setStatus('⚠ Groq was unavailable for this run — used the offline heuristic. Try again.', true);
-    }
+    document.getElementById('r-engine-wrap').title = d.ai_enabled
+      ? 'Generated with AI assistance'
+      : 'Generated using the built-in rules';
 
     const base = d.filename || 'presentation';
     const htmlUrl = URL.createObjectURL(new Blob([d.html], { type: 'text/html' }));
@@ -434,7 +437,8 @@
     const notesMeta = document.getElementById('notes-meta');
     const list = document.getElementById('notes-list');
     list.innerHTML = '';
-    notesMeta.textContent = notesMetaText;
+    notesMeta.textContent = notesMetaText
+      || (d.reviewed ? 'This deck was reviewed before it was rendered.' : '');
     if (d.review_notes && d.review_notes.length) {
       d.review_notes.forEach(n => {
         const li = document.createElement('li');
@@ -442,7 +446,7 @@
         list.appendChild(li);
       });
       notes.classList.add('show');
-    } else if (notesMetaText) {
+    } else if (notesMeta.textContent) {
       notes.classList.add('show');
     } else {
       notes.classList.remove('show');
