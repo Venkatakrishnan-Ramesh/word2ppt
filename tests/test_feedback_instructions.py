@@ -271,6 +271,77 @@ class FeedbackInstructionTests(unittest.TestCase):
         self.assertEqual(plan_mock.call_args.args[3], 20)
         self.assertIn("Preserve at least 20 slides", plan_mock.call_args.kwargs["instructions"])
 
+    def test_pipeline_honors_explicit_slide_count_in_feedback(self) -> None:
+        settings = Settings(
+            groq_api_key=None,
+            groq_model="test-model",
+            groq_fallback_model=None,
+            gemini_api_key=None,
+            gemini_model="test-gemini",
+            max_upload_bytes=1024,
+            groq_max_tokens=128,
+            groq_source_chars=256,
+            feedback_webhook_url=None,
+        )
+        blocks = [Block(kind="text", level=0, text="Body")]
+        deck = Deck(title="Deck", subtitle="Source", slides=[Slide(title="Intro")])
+
+        with (
+            patch("app.pipeline.parse_source", return_value=blocks),
+            patch("app.pipeline.plan_deck", return_value=(deck, "heuristic")) as plan_mock,
+            patch("app.pipeline.strip_diagrams", return_value=deck),
+            patch("app.pipeline.render_pptx", return_value=b"pptx"),
+            patch("app.pipeline.render_html", return_value="<html />"),
+        ):
+            convert(
+                Path("/tmp/tmpabc123.md"),
+                settings,
+                target_slides=12,
+                instructions="make it for 30 slides",
+            )
+
+        self.assertEqual(plan_mock.call_args.args[3], 30)
+        self.assertIn("Preserve at least 30 slides", plan_mock.call_args.kwargs["instructions"])
+
+    def test_pipeline_expands_deck_when_explicit_target_exceeds_planned_count(self) -> None:
+        settings = Settings(
+            groq_api_key=None,
+            groq_model="test-model",
+            groq_fallback_model=None,
+            gemini_api_key=None,
+            gemini_model="test-gemini",
+            max_upload_bytes=1024,
+            groq_max_tokens=128,
+            groq_source_chars=256,
+            feedback_webhook_url=None,
+        )
+        blocks = [Block(kind="text", level=0, text="Body")]
+        deck = Deck(
+            title="Deck",
+            subtitle="Source",
+            slides=[
+                Slide(title="Intro", bullets=["One", "Two", "Three"]),
+                Slide(title="Next", bullets=["Four", "Five"]),
+            ],
+        )
+
+        with (
+            patch("app.pipeline.parse_source", return_value=blocks),
+            patch("app.pipeline.plan_deck", return_value=(deck, "heuristic")),
+            patch("app.pipeline.strip_diagrams", return_value=deck),
+            patch("app.pipeline.render_pptx", return_value=b"pptx"),
+            patch("app.pipeline.render_html", return_value="<html />"),
+        ):
+            result = convert(
+                Path("/tmp/tmpabc123.md"),
+                settings,
+                target_slides=5,
+                instructions="make it for 5 slides",
+            )
+
+        self.assertGreaterEqual(len(result.deck.slides), 5)
+        self.assertEqual(result.deck.slides[0].bullets, ["One"])
+
     def test_pipeline_can_disable_tables(self) -> None:
         settings = Settings(
             groq_api_key=None,
