@@ -369,9 +369,9 @@
 
   async function convertWithInstructions(source, instructions) {
     const fd = new FormData();
-    // Feedback-triggered reruns should always run the review pass, not just the
-    // initial planning pass.
-    fd.append('review', 'true');
+    // Feedback-triggered reruns should regenerate the deck directly, without a
+    // second review pass that can fail on rate limits and add noisy notes.
+    fd.append('review', 'false');
     fd.append('diagrams', document.getElementById('diagrams').checked);
     fd.append('max_slides', document.getElementById('maxslides').value || 80);
     fd.append('instructions', instructions);
