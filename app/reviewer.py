@@ -65,10 +65,13 @@ def review_deck(
     if not settings.ai_enabled:
         return deck, ["Agentic review skipped — no GROQ_API_KEY configured."]
 
+    # The review sends the draft deck AND the source, so keep the source compact
+    # to stay within Groq token-per-day limits (the draft already carries content).
+    source_cap = min(settings.groq_source_chars, 6000)
     user_prompt = (
         f"Slide limit: at most {max_slides} slides.\n\n"
-        "ORIGINAL SOURCE:\n"
-        f"{blocks_to_plain_text(blocks)}\n\n"
+        "ORIGINAL SOURCE (excerpt):\n"
+        f"{blocks_to_plain_text(blocks, source_cap)}\n\n"
         "DRAFT DECK (JSON):\n"
         f"{_deck_to_json(deck)}"
     )

@@ -159,8 +159,8 @@
         <div class="paste-actions">
           <button class="btn" id="gen-text" type="button">Generate slides</button>
           <label class="review-toggle">
-            <input type="checkbox" id="review" checked />
-            Agentic review <span class="tag">Groq AI</span>
+            <input type="checkbox" id="review" />
+            Agentic review <span class="tag">Groq AI · extra tokens</span>
           </label>
           <label class="review-toggle">
             <input type="checkbox" id="diagrams" />
@@ -207,9 +207,25 @@
       <iframe id="preview" title="Deck preview"></iframe>
     </div>
 
+    <section id="feedback" style="margin-top:2rem; border:1px solid var(--line);
+      border-radius:16px; background:var(--panel); padding:1.2rem 1.3rem;">
+      <h3 style="margin:0 0 .2rem; font-size:1rem;">Feedback</h3>
+      <p style="margin:0 0 .8rem; color:var(--muted); font-size:.85rem;">
+        Help improve word2ppt — rate it and tell us what to fix.</p>
+      <div id="stars" style="font-size:1.5rem; color:#ffd166; letter-spacing:.15rem; cursor:pointer; user-select:none;">
+        <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
+      </div>
+      <textarea id="fb-comment" placeholder="What worked, what didn't, what to improve…"
+        style="width:100%; min-height:90px; margin-top:.7rem; resize:vertical; color:var(--text);
+        background:#0e1426; border:1px solid var(--line); border-radius:10px; padding:.8rem; font:inherit;"></textarea>
+      <div style="display:flex; align-items:center; gap:.9rem; margin-top:.7rem;">
+        <button class="btn" id="fb-send" type="button">Send feedback</button>
+        <span id="fb-msg" style="color:var(--ok); font-size:.85rem;"></span>
+      </div>
+    </section>
+
     <footer>
-      No API key? It still works with a built-in heuristic. For AI-restructured slides,
-      set <code>GROQ_API_KEY</code> (free at console.groq.com) before starting the server.
+      Powered by Groq AI · government-formal output · diagrams &amp; tables optional.
     </footer>
   </div>
 
@@ -218,6 +234,34 @@
   const fileInput = document.getElementById('file');
   const statusEl = document.getElementById('status');
   const result = document.getElementById('result');
+
+  // --- Feedback widget ---
+  let fbRating = 0;
+  const starEls = document.querySelectorAll('#stars span');
+  function paintStars(n) {
+    starEls.forEach(s => { s.textContent = Number(s.dataset.v) <= n ? '★' : '☆'; });
+  }
+  starEls.forEach(s => s.addEventListener('click', () => {
+    fbRating = Number(s.dataset.v); paintStars(fbRating);
+  }));
+  document.getElementById('fb-send').addEventListener('click', async () => {
+    const comment = document.getElementById('fb-comment').value.trim();
+    const msg = document.getElementById('fb-msg');
+    if (!fbRating && !comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Add a rating or a comment.'; return; }
+    const fd = new FormData();
+    fd.append('rating', fbRating);
+    fd.append('comment', comment);
+    fd.append('context', navigator.userAgent.slice(0, 120));
+    try {
+      const res = await fetch('/api/feedback', { method: 'POST', body: fd });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.detail || 'Failed');
+      msg.style.color = 'var(--ok)'; msg.textContent = d.message || 'Thanks!';
+      document.getElementById('fb-comment').value = ''; fbRating = 0; paintStars(0);
+    } catch (e) {
+      msg.style.color = '#ff6b6b'; msg.textContent = e.message;
+    }
+  });
 
   fetch('/api/health').then(r => r.json()).then(h => {
     document.getElementById('aimode').textContent =

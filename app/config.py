@@ -37,6 +37,9 @@ class Settings:
     groq_api_key: str | None
     groq_model: str
     max_upload_bytes: int
+    groq_max_tokens: int
+    groq_source_chars: int
+    feedback_webhook_url: str | None
 
     @property
     def ai_enabled(self) -> bool:
@@ -44,12 +47,21 @@ class Settings:
 
 
 def load_settings() -> Settings:
-    """Read settings from the environment. Missing Groq key => heuristic fallback."""
+    """Read settings from the environment. Missing Groq key => heuristic fallback.
+
+    GROQ_MAX_TOKENS / GROQ_SOURCE_CHARS default to values that keep input+output
+    under the Groq free tier's ~12k tokens-per-minute limit. Raise them after
+    upgrading the Groq plan to allow larger AI-generated decks.
+    """
     return Settings(
         groq_api_key=os.environ.get("GROQ_API_KEY") or None,
         # Free, fast Groq model with JSON mode support.
         groq_model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
         max_upload_bytes=int(os.environ.get("MAX_UPLOAD_BYTES", 20 * 1024 * 1024)),
+        groq_max_tokens=int(os.environ.get("GROQ_MAX_TOKENS", 4000)),
+        groq_source_chars=int(os.environ.get("GROQ_SOURCE_CHARS", 9000)),
+        # Optional: POST each feedback submission here (Slack/Discord/Sheets webhook).
+        feedback_webhook_url=os.environ.get("FEEDBACK_WEBHOOK_URL") or None,
     )
 
 

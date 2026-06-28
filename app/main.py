@@ -16,6 +16,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from .config import STATIC_DIR, clamp_max_slides, load_settings
+from .feedback import record_feedback
 from .pipeline import SUPPORTED_EXTS, convert
 
 settings = load_settings()
@@ -39,6 +40,20 @@ def index():
 @app.get("/api/health")
 def health() -> dict:
     return {"ok": True, "ai_enabled": settings.ai_enabled, "model": settings.groq_model}
+
+
+@app.post("/api/feedback")
+async def feedback_endpoint(
+    rating: int = Form(0),
+    comment: str = Form(""),
+    context: str = Form(""),
+) -> JSONResponse:
+    rating = max(0, min(5, rating))
+    comment = comment.strip()
+    if not comment and not rating:
+        raise HTTPException(status_code=400, detail="Provide a rating or a comment.")
+    record_feedback(settings, rating, comment, context)
+    return JSONResponse({"ok": True, "message": "Thanks for the feedback!"})
 
 
 @app.post("/api/convert")

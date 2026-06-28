@@ -298,8 +298,9 @@ def groq_json(system: str, user: str, settings: Settings, retries: int = 3) -> d
             completion = client.chat.completions.create(
                 model=settings.groq_model,
                 temperature=0.2,
-                # Allow large JSON so big decks (many slides) aren't truncated.
-                max_tokens=32000,
+                # Keep output bounded so input+output stays under the Groq free-tier
+                # TPM limit (~12k); larger decks fall back to the heuristic engine.
+                max_tokens=settings.groq_max_tokens,
                 response_format={"type": "json_object"},
                 messages=[
                     {"role": "system", "content": system},
@@ -321,7 +322,7 @@ def groq_plan(
     max_slides: int = MAX_SLIDES,
 ) -> Deck:
     """Ask Groq to restructure the document. Raises only after retries are exhausted."""
-    source = blocks_to_plain_text(blocks)
+    source = blocks_to_plain_text(blocks, settings.groq_source_chars)
     payload = groq_json(
         _SYSTEM_PROMPT,
         f"Document title hint: {fallback_title}\n"
