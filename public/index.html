@@ -238,6 +238,7 @@
   const statusEl = document.getElementById('status');
   const result = document.getElementById('result');
   let lastSource = null;
+  let lastResult = null;
 
   // --- Feedback widget ---
   let fbRating = 0;
@@ -376,6 +377,7 @@
     fd.append('diagrams', document.getElementById('diagrams').checked);
     fd.append('max_slides', document.getElementById('maxslides').value || 80);
     fd.append('instructions', instructions);
+    fd.append('target_slides', lastResult?.slide_count || 0);
     if (source.kind === 'text') {
       fd.append('text', source.value);
       const res = await fetch('/api/convert-text', { method: 'POST', body: fd });
@@ -401,6 +403,7 @@
   function showResult(d, notesMetaText = '') {
     objectUrls.forEach(u => URL.revokeObjectURL(u));
     objectUrls = [];
+    lastResult = d;
 
     document.getElementById('r-title').textContent = d.title;
     document.getElementById('r-slides').textContent = d.slide_count;

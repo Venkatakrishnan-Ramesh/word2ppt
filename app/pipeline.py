@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import Settings
+from .config import MAX_SLIDES, clamp_max_slides, Settings
 from .docx_parser import Block, parse_docx
 from .html_builder import render_html
 from .models import Deck
@@ -50,6 +50,7 @@ def convert(
     max_slides: int = MAX_SLIDES,
     instructions: str = "",
     source_name: str = "",
+    target_slides: int = 0,
 ) -> ConversionResult:
     blocks = parse_source(source)
     if not blocks:
@@ -59,6 +60,13 @@ def convert(
     fallback_title = origin.replace("_", " ").replace("-", " ").strip().title()
     if not fallback_title or fallback_title.lower().startswith("tmp"):
         fallback_title = "Presentation"
+    if target_slides > 0:
+        max_slides = clamp_max_slides(target_slides)
+        instructions = (
+            f"{instructions.strip()}\n\n"
+            f"Preserve at least {target_slides} slides. "
+            "Do not merge slides in a way that reduces the deck below that count."
+        ).strip()
     deck, strategy = plan_deck(
         blocks, fallback_title, settings, max_slides, instructions=instructions
     )

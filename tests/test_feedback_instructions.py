@@ -240,6 +240,37 @@ class FeedbackInstructionTests(unittest.TestCase):
 
         self.assertEqual(plan_mock.call_args.args[1], "Quarterly Report")
 
+    def test_pipeline_preserves_target_slide_count(self) -> None:
+        settings = Settings(
+            groq_api_key=None,
+            groq_model="test-model",
+            groq_fallback_model=None,
+            gemini_api_key=None,
+            gemini_model="test-gemini",
+            max_upload_bytes=1024,
+            groq_max_tokens=128,
+            groq_source_chars=256,
+            feedback_webhook_url=None,
+        )
+        blocks = [Block(kind="text", level=0, text="Body")]
+        deck = Deck(title="Deck", subtitle="Source", slides=[Slide(title="Intro")])
+
+        with (
+            patch("app.pipeline.parse_source", return_value=blocks),
+            patch("app.pipeline.plan_deck", return_value=(deck, "heuristic")) as plan_mock,
+            patch("app.pipeline.strip_diagrams", return_value=deck),
+            patch("app.pipeline.render_pptx", return_value=b"pptx"),
+            patch("app.pipeline.render_html", return_value="<html />"),
+        ):
+            convert(
+                Path("/tmp/tmpabc123.md"),
+                settings,
+                target_slides=20,
+            )
+
+        self.assertEqual(plan_mock.call_args.args[3], 20)
+        self.assertIn("Preserve at least 20 slides", plan_mock.call_args.kwargs["instructions"])
+
     def test_main_bytes_path_forwards_instructions(self) -> None:
         from app.main import _convert_bytes
 
