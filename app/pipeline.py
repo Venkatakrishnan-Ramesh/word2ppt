@@ -49,12 +49,16 @@ def convert(
     diagrams: bool = False,
     max_slides: int = MAX_SLIDES,
     instructions: str = "",
+    source_name: str = "",
 ) -> ConversionResult:
     blocks = parse_source(source)
     if not blocks:
         raise ValueError("No readable content found in the uploaded file.")
 
-    fallback_title = source.stem.replace("_", " ").replace("-", " ").strip().title()
+    origin = source_name.strip() or source.stem
+    fallback_title = origin.replace("_", " ").replace("-", " ").strip().title()
+    if not fallback_title or fallback_title.lower().startswith("tmp"):
+        fallback_title = "Presentation"
     deck, strategy = plan_deck(
         blocks, fallback_title, settings, max_slides, instructions=instructions
     )

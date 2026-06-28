@@ -77,7 +77,10 @@ async def convert_endpoint(
     if len(data) > settings.max_upload_bytes:
         raise HTTPException(status_code=413, detail="File too large.")
 
-    return _convert_bytes(data, suffix, review, diagrams, max_slides, instructions)
+    source_name = Path(file.filename or "").stem or "Presentation"
+    return _convert_bytes(
+        data, suffix, review, diagrams, max_slides, instructions, source_name
+    )
 
 
 @app.post("/api/convert-text")
@@ -95,7 +98,13 @@ async def convert_text_endpoint(
         raise HTTPException(status_code=413, detail="Text too large.")
     # Treat pasted content as markdown so headings/tables/lists are understood.
     return _convert_bytes(
-        content.encode("utf-8"), ".md", review, diagrams, max_slides, instructions
+        content.encode("utf-8"),
+        ".md",
+        review,
+        diagrams,
+        max_slides,
+        instructions,
+        "Pasted text",
     )
 
 
@@ -111,6 +120,7 @@ def _convert_bytes(
     diagrams: bool,
     max_slides: int,
     instructions: str = "",
+    source_name: str = "",
 ) -> JSONResponse:
     """Run the pipeline on the source bytes and return artifacts inline."""
     slide_cap = clamp_max_slides(max_slides)
@@ -122,7 +132,7 @@ def _convert_bytes(
     try:
         result = convert(
             source_path, settings, review=review, diagrams=diagrams,
-            max_slides=slide_cap, instructions=instructions,
+            max_slides=slide_cap, instructions=instructions, source_name=source_name,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
