@@ -188,6 +188,12 @@
         <div class="hint">.docx · .txt · .md — up to 20&nbsp;MB</div>
         <input type="file" id="file" accept=".docx,.txt,.md,.markdown,.text" />
       </label>
+      <div class="paste-actions" style="margin-top:1rem;">
+        <label class="review-toggle">
+          <input type="checkbox" id="tables-upload" checked />
+          Tables
+        </label>
+      </div>
     </div>
 
     <div class="status" id="status"></div>
@@ -244,6 +250,22 @@
   const result = document.getElementById('result');
   let lastSource = null;
   let lastResult = null;
+  const tablesToggles = [
+    document.getElementById('tables'),
+    document.getElementById('tables-upload'),
+  ].filter(Boolean);
+
+  function tablesEnabled() {
+    return tablesToggles.some(cb => cb.checked);
+  }
+
+  function syncTables(source) {
+    tablesToggles.forEach(cb => {
+      if (cb !== source) cb.checked = source.checked;
+    });
+  }
+
+  tablesToggles.forEach(cb => cb.addEventListener('change', () => syncTables(cb)));
 
   // --- Feedback widget ---
   let fbRating = 0;
@@ -326,7 +348,7 @@
       fd.append('text', text);
       fd.append('review', document.getElementById('review').checked);
       fd.append('diagrams', document.getElementById('diagrams').checked);
-      fd.append('tables', document.getElementById('tables').checked);
+      fd.append('tables', tablesEnabled());
       fd.append('max_slides', document.getElementById('maxslides').value || 80);
       const res = await fetch('/api/convert-text', { method: 'POST', body: fd });
       const data = await res.json();
@@ -363,7 +385,7 @@
     fd.append('file', file);
     fd.append('review', document.getElementById('review').checked);
     fd.append('diagrams', document.getElementById('diagrams').checked);
-    fd.append('tables', document.getElementById('tables').checked);
+    fd.append('tables', tablesEnabled());
     fd.append('max_slides', document.getElementById('maxslides').value || 80);
     try {
       const res = await fetch('/api/convert', { method: 'POST', body: fd });
@@ -382,7 +404,7 @@
     // second review pass that can fail on rate limits and add noisy notes.
     fd.append('review', 'false');
     fd.append('diagrams', document.getElementById('diagrams').checked);
-    fd.append('tables', document.getElementById('tables').checked);
+    fd.append('tables', tablesEnabled());
     fd.append('max_slides', document.getElementById('maxslides').value || 80);
     fd.append('instructions', instructions);
     fd.append('target_slides', lastResult?.slide_count || 0);
