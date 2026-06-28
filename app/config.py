@@ -15,9 +15,19 @@ STATIC_DIR = BASE_DIR / "public"
 # Slide content limits keep decks readable instead of dumping whole paragraphs.
 MAX_BULLETS_PER_SLIDE = 6
 MAX_BULLET_CHARS = 160
+# Default slide ceiling; callers can override per request up to MAX_SLIDES_LIMIT.
 MAX_SLIDES = 80
+MAX_SLIDES_LIMIT = 200
+MIN_SLIDES_LIMIT = 5
 # Tables larger than this many body rows are split across multiple slides.
 MAX_TABLE_ROWS_PER_SLIDE = 5
+
+
+def clamp_max_slides(value: int | None) -> int:
+    """Clamp a requested slide ceiling into the allowed range."""
+    if not value:
+        return MAX_SLIDES
+    return max(MIN_SLIDES_LIMIT, min(MAX_SLIDES_LIMIT, int(value)))
 
 
 @dataclass(frozen=True)

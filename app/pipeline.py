@@ -12,7 +12,12 @@ from .models import Deck
 from .pptx_builder import render_pptx
 from .reviewer import review_deck
 from .config import MAX_SLIDES
-from .slide_planner import _paginate_tables, extract_route_slides, plan_deck
+from .slide_planner import (
+    _paginate_tables,
+    extract_route_slides,
+    plan_deck,
+    strip_diagrams,
+)
 from .text_parser import parse_text
 
 SUPPORTED_EXTS = {".docx", ".txt", ".md", ".markdown", ".text"}
@@ -41,27 +46,34 @@ def convert(
     source: Path,
     settings: Settings,
     review: bool = False,
+    diagrams: bool = False,
+    max_slides: int = MAX_SLIDES,
 ) -> ConversionResult:
     blocks = parse_source(source)
     if not blocks:
         raise ValueError("No readable content found in the uploaded file.")
 
     fallback_title = source.stem.replace("_", " ").replace("-", " ").strip().title()
-    deck, strategy = plan_deck(blocks, fallback_title, settings)
+    deck, strategy = plan_deck(blocks, fallback_title, settings, max_slides)
 
     review_notes: tuple[str, ...] = ()
     if review:
-        deck, notes = review_deck(deck, blocks, settings)
-        deck = _paginate_tables(deck)  # reviewer may have reshaped tables
+        deck, notes = review_deck(deck, blocks, settings, max_slides)
+        deck = _paginate_tables(deck, max_slides)  # reviewer may have reshaped tables
         review_notes = tuple(notes)
 
-    # Deterministically turn inline route/sequence lines into flow-diagram slides,
-    # independent of what the LLM chose. Placed right after the opening slide.
-    route_slides = extract_route_slides(blocks)
-    if route_slides:
-        head, tail = deck.slides[:1], deck.slides[1:]
-        merged = (head + route_slides + tail)[:MAX_SLIDES]
-        deck = Deck(title=deck.title, subtitle=deck.subtitle, slides=merged)
+    if diagrams:
+        # Deterministically turn inline route/sequence lines into flow-diagram
+        # slides, independent of what the LLM chose. Placed after the opening slide.
+        route_slides = extract_route_slides(blocks)
+        if route_slides:
+            head, tail = deck.slides[:1], deck.slides[1:]
+            merged = (head + route_slides + tail)[:max_slides]
+            deck = Deck(title=deck.title, subtitle=deck.subtitle, slides=merged)
+    else:
+        # Diagrams not wanted (e.g. formal government decks): convert any diagram
+        # the planner/reviewer produced back into plain bullet content.
+        deck = strip_diagrams(deck)
 
     return ConversionResult(
         deck=deck,

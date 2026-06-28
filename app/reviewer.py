@@ -17,21 +17,25 @@ import textwrap
 from .config import MAX_SLIDES, Settings
 from .docx_parser import Block, blocks_to_plain_text
 from .models import Deck
-from .slide_planner import _clean_slide, _truncate
+from .slide_planner import _clean_slide, _truncate, groq_json
 
 _REVIEW_SYSTEM = textwrap.dedent(
     """
-    You are a meticulous presentation editor reviewing a draft slide deck that
-    was auto-generated from a source document. Act as a critic, then an editor.
+    You are a meticulous editor reviewing a draft slide deck for an OFFICIAL
+    GOVERNMENT / PUBLIC-SECTOR presentation. Act as a critic, then an editor.
+    Maintain a formal, precise, administrative register throughout.
 
     Evaluate the draft against the ORIGINAL source for:
-    - Clarity: titles are sharp; bullets are short phrases, not sentences.
+    - Tone: formal and official; remove any casual or marketing language.
+    - Clarity: titles are formal and descriptive; bullets are clean formal phrases.
     - Focus: one idea per slide; split or merge where needed.
-    - Faithfulness: numbers, names and facts match the source; nothing invented.
-    - Form: sequential/process content should be a flow diagram
-      ({"type":"flow","direction":"down"|"right","steps":[str]}); tabular data
-      should stay a table ({"headers":[str],"rows":[[str]]}).
-    - Concision: tighten verbose cells and bullets.
+    - Faithfulness: numbers, place names, scheme/section numbers, units and facts
+      must match the source EXACTLY; nothing invented or dropped.
+    - Form: tabular data should stay a table
+      ({"headers":[str],"rows":[[str]]}). Only use a flow diagram
+      ({"type":"flow","direction":"down"|"right","steps":[str]}) when content is
+      genuinely sequential.
+    - Concision: tighten verbose cells and bullets without losing official detail.
 
     Return ONLY JSON:
     {
@@ -42,9 +46,8 @@ _REVIEW_SYSTEM = textwrap.dedent(
                     "diagram": {...}|null, "table": {...}|null, "notes": str}]
       }
     }
-    Keep at most %d slides. Preserve the source's ordering and meaning.
+    Stay within the slide limit the user provides. Preserve ordering and meaning.
     """
-    % MAX_SLIDES
 ).strip()
 
 
@@ -53,34 +56,25 @@ def _deck_to_json(deck: Deck) -> str:
 
 
 def review_deck(
-    deck: Deck, blocks: list[Block], settings: Settings
+    deck: Deck,
+    blocks: list[Block],
+    settings: Settings,
+    max_slides: int = MAX_SLIDES,
 ) -> tuple[Deck, list[str]]:
     """Run one agentic review/revision pass. Returns (revised_deck, notes)."""
     if not settings.ai_enabled:
         return deck, ["Agentic review skipped — no GROQ_API_KEY configured."]
 
+    user_prompt = (
+        f"Slide limit: at most {max_slides} slides.\n\n"
+        "ORIGINAL SOURCE:\n"
+        f"{blocks_to_plain_text(blocks)}\n\n"
+        "DRAFT DECK (JSON):\n"
+        f"{_deck_to_json(deck)}"
+    )
     try:
-        from groq import Groq
-
-        client = Groq(api_key=settings.groq_api_key)
-        completion = client.chat.completions.create(
-            model=settings.groq_model,
-            temperature=0.2,
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": _REVIEW_SYSTEM},
-                {
-                    "role": "user",
-                    "content": (
-                        "ORIGINAL SOURCE:\n"
-                        f"{blocks_to_plain_text(blocks)}\n\n"
-                        "DRAFT DECK (JSON):\n"
-                        f"{_deck_to_json(deck)}"
-                    ),
-                },
-            ],
-        )
-        payload = json.loads(completion.choices[0].message.content)
+        # Reuse the planner's retrying Groq JSON helper.
+        payload = groq_json(_REVIEW_SYSTEM, user_prompt, settings)
     except Exception as exc:  # noqa: BLE001 — never let review break a conversion
         return deck, [f"Agentic review skipped (error: {exc})."]
 
@@ -99,6 +93,6 @@ def review_deck(
     new_deck = Deck(
         title=_truncate(str(revised.get("title") or deck.title), 120),
         subtitle=_truncate(str(revised.get("subtitle") or deck.subtitle), 120),
-        slides=slides[:MAX_SLIDES],
+        slides=slides[:max_slides],
     )
     return new_deck, (notes or ["Agentic review completed."])

@@ -15,7 +15,7 @@ from pathlib import Path
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from .config import STATIC_DIR, load_settings
+from .config import STATIC_DIR, clamp_max_slides, load_settings
 from .pipeline import SUPPORTED_EXTS, convert
 
 settings = load_settings()
@@ -43,7 +43,10 @@ def health() -> dict:
 
 @app.post("/api/convert")
 async def convert_endpoint(
-    file: UploadFile = File(...), review: bool = Form(False)
+    file: UploadFile = File(...),
+    review: bool = Form(False),
+    diagrams: bool = Form(False),
+    max_slides: int = Form(0),
 ) -> JSONResponse:
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED_EXTS:
@@ -58,12 +61,15 @@ async def convert_endpoint(
     if len(data) > settings.max_upload_bytes:
         raise HTTPException(status_code=413, detail="File too large.")
 
-    return _convert_bytes(data, suffix, review)
+    return _convert_bytes(data, suffix, review, diagrams, max_slides)
 
 
 @app.post("/api/convert-text")
 async def convert_text_endpoint(
-    text: str = Form(...), review: bool = Form(False)
+    text: str = Form(...),
+    review: bool = Form(False),
+    diagrams: bool = Form(False),
+    max_slides: int = Form(0),
 ) -> JSONResponse:
     content = text.strip()
     if not content:
@@ -71,7 +77,7 @@ async def convert_text_endpoint(
     if len(content.encode("utf-8")) > settings.max_upload_bytes:
         raise HTTPException(status_code=413, detail="Text too large.")
     # Treat pasted content as markdown so headings/tables/lists are understood.
-    return _convert_bytes(content.encode("utf-8"), ".md", review)
+    return _convert_bytes(content.encode("utf-8"), ".md", review, diagrams, max_slides)
 
 
 def _slugify(title: str) -> str:
@@ -79,15 +85,21 @@ def _slugify(title: str) -> str:
     return slug[:60] or "presentation"
 
 
-def _convert_bytes(data: bytes, suffix: str, review: bool) -> JSONResponse:
+def _convert_bytes(
+    data: bytes, suffix: str, review: bool, diagrams: bool, max_slides: int
+) -> JSONResponse:
     """Run the pipeline on the source bytes and return artifacts inline."""
+    slide_cap = clamp_max_slides(max_slides)
     # Parsers take a path; use a short-lived temp file (works on serverless /tmp).
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(data)
         source_path = Path(tmp.name)
 
     try:
-        result = convert(source_path, settings, review=review)
+        result = convert(
+            source_path, settings, review=review, diagrams=diagrams,
+            max_slides=slide_cap,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001 — surface a clean error to the client
@@ -101,6 +113,7 @@ def _convert_bytes(data: bytes, suffix: str, review: bool) -> JSONResponse:
             "filename": _slugify(result.deck.title),
             "slide_count": len(result.deck.slides),
             "strategy": result.strategy,
+            "ai_enabled": settings.ai_enabled,
             "diagram_count": sum(1 for s in result.deck.slides if s.diagram),
             "table_count": sum(1 for s in result.deck.slides if s.table),
             "reviewed": result.reviewed,

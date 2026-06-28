@@ -159,8 +159,18 @@
         <div class="paste-actions">
           <button class="btn" id="gen-text" type="button">Generate slides</button>
           <label class="review-toggle">
-            <input type="checkbox" id="review" />
+            <input type="checkbox" id="review" checked />
             Agentic review <span class="tag">Groq AI</span>
+          </label>
+          <label class="review-toggle">
+            <input type="checkbox" id="diagrams" />
+            Flow diagrams
+          </label>
+          <label class="review-toggle" style="gap:.45rem">
+            Max slides
+            <input type="number" id="maxslides" min="5" max="200" value="80"
+              style="width:62px; padding:.3rem .4rem; border-radius:8px;
+                     border:1px solid var(--line); background:#0e1426; color:var(--text);" />
           </label>
           <span class="paste-hint" id="aimode">checking engine…</span>
         </div>
@@ -234,6 +244,8 @@
       const fd = new FormData();
       fd.append('text', text);
       fd.append('review', document.getElementById('review').checked);
+      fd.append('diagrams', document.getElementById('diagrams').checked);
+      fd.append('max_slides', document.getElementById('maxslides').value || 80);
       const res = await fetch('/api/convert-text', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Conversion failed');
@@ -267,6 +279,8 @@
     const fd = new FormData();
     fd.append('file', file);
     fd.append('review', document.getElementById('review').checked);
+    fd.append('diagrams', document.getElementById('diagrams').checked);
+    fd.append('max_slides', document.getElementById('maxslides').value || 80);
     try {
       const res = await fetch('/api/convert', { method: 'POST', body: fd });
       const data = await res.json();
@@ -294,6 +308,11 @@
     document.getElementById('r-slides').textContent = d.slide_count;
     document.getElementById('r-diagrams').textContent = d.diagram_count;
     document.getElementById('r-engine').textContent = d.strategy;
+
+    // Warn if Groq was available but the deck still fell back to the heuristic.
+    if (d.ai_enabled && d.strategy !== 'groq') {
+      setStatus('⚠ Groq was unavailable for this run — used the offline heuristic. Try again.', true);
+    }
 
     const base = d.filename || 'presentation';
     const htmlUrl = URL.createObjectURL(new Blob([d.html], { type: 'text/html' }));
