@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from .config import STATIC_DIR, load_settings
 from .pipeline import SUPPORTED_EXTS, convert
@@ -26,9 +26,14 @@ _PPTX_MEDIA = (
 )
 
 
-@app.get("/", response_class=HTMLResponse)
-def index() -> HTMLResponse:
-    return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
+@app.get("/")
+def index():
+    # Local dev serves the UI directly; on Vercel "/" is rewritten to the static
+    # /index.html, but if the function is ever hit here, redirect rather than 500.
+    path = STATIC_DIR / "index.html"
+    if path.is_file():
+        return HTMLResponse(path.read_text(encoding="utf-8"))
+    return RedirectResponse(url="/index.html")
 
 
 @app.get("/api/health")

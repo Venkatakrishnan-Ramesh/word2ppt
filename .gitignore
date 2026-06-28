@@ -6,3 +6,5 @@ uploads/*
 output/*
 !uploads/.gitkeep
 !output/.gitkeep
+.vercel
+.env*
