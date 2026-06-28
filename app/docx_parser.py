@@ -82,7 +82,7 @@ def document_title(blocks: list[Block], fallback: str) -> str:
     return fallback
 
 
-def blocks_to_plain_text(blocks: list[Block], limit: int = 16000) -> str:
+def blocks_to_plain_text(blocks: list[Block], limit: int = 90000) -> str:
     """Render blocks as lightweight markdown for the LLM prompt (length-capped)."""
     lines: list[str] = []
     for block in blocks:
