@@ -100,6 +100,46 @@ def strip_diagrams(deck: Deck) -> Deck:
     return Deck(title=deck.title, subtitle=deck.subtitle, slides=slides)
 
 
+def strip_tables(deck: Deck) -> Deck:
+    """Remove tables while preserving their content as bullets.
+
+    Used when the user wants a simpler deck layout without table slides. A table-
+    only slide becomes a bullet slide summarizing each row.
+    """
+    slides: list[Slide] = []
+    for slide in deck.slides:
+        if not slide.table:
+            slides.append(slide)
+            continue
+        if slide.bullets or slide.diagram:
+            slides.append(
+                Slide(
+                    title=slide.title,
+                    bullets=slide.bullets,
+                    diagram=slide.diagram,
+                    notes=slide.notes,
+                )
+            )
+        else:
+            row_text = []
+            if slide.table.headers:
+                row_text.append(" / ".join(h for h in slide.table.headers if h))
+            row_text.extend(
+                " / ".join(cell for cell in row if cell).strip(" /")
+                for row in slide.table.rows
+                if any(cell.strip() for cell in row)
+            )
+            bullets = [_truncate(text, MAX_BULLET_CHARS) for text in row_text if text]
+            slides.append(
+                Slide(
+                    title=slide.title,
+                    bullets=bullets or ["Table content"],
+                    notes=slide.notes,
+                )
+            )
+    return Deck(title=deck.title, subtitle=deck.subtitle, slides=slides)
+
+
 def extract_route_slides(blocks: list[Block]) -> list[Slide]:
     """Find inline route/corridor lines in the source and render them as flow diagrams.
 

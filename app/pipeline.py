@@ -17,6 +17,7 @@ from .slide_planner import (
     extract_route_slides,
     plan_deck,
     strip_diagrams,
+    strip_tables,
 )
 from .text_parser import parse_text
 
@@ -47,6 +48,7 @@ def convert(
     settings: Settings,
     review: bool = False,
     diagrams: bool = False,
+    tables: bool = True,
     max_slides: int = MAX_SLIDES,
     instructions: str = "",
     source_name: str = "",
@@ -91,6 +93,9 @@ def convert(
         # Diagrams not wanted (e.g. formal government decks): convert any diagram
         # the planner/reviewer produced back into plain bullet content.
         deck = strip_diagrams(deck)
+
+    if not tables:
+        deck = strip_tables(deck)
 
     return ConversionResult(
         deck=deck,

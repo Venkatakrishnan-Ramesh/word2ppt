@@ -271,6 +271,37 @@ class FeedbackInstructionTests(unittest.TestCase):
         self.assertEqual(plan_mock.call_args.args[3], 20)
         self.assertIn("Preserve at least 20 slides", plan_mock.call_args.kwargs["instructions"])
 
+    def test_pipeline_can_disable_tables(self) -> None:
+        settings = Settings(
+            groq_api_key=None,
+            groq_model="test-model",
+            groq_fallback_model=None,
+            gemini_api_key=None,
+            gemini_model="test-gemini",
+            max_upload_bytes=1024,
+            groq_max_tokens=128,
+            groq_source_chars=256,
+            feedback_webhook_url=None,
+        )
+        blocks = [Block(kind="table", level=0, text="", rows=(("A", "B"), ("1", "2")))]
+        deck = Deck(title="Deck", subtitle="Source", slides=[Slide(title="Table")])
+
+        with (
+            patch("app.pipeline.parse_source", return_value=blocks),
+            patch("app.pipeline.plan_deck", return_value=(deck, "heuristic")),
+            patch("app.pipeline.strip_diagrams", return_value=deck),
+            patch("app.pipeline.strip_tables", return_value=deck) as strip_tables_mock,
+            patch("app.pipeline.render_pptx", return_value=b"pptx"),
+            patch("app.pipeline.render_html", return_value="<html />"),
+        ):
+            convert(
+                Path("/tmp/tmpabc123.md"),
+                settings,
+                tables=False,
+            )
+
+        strip_tables_mock.assert_called_once()
+
     def test_main_bytes_path_forwards_instructions(self) -> None:
         from app.main import _convert_bytes
 
@@ -299,12 +330,14 @@ class FeedbackInstructionTests(unittest.TestCase):
                 ".txt",
                 review=False,
                 diagrams=False,
+                tables=False,
                 max_slides=0,
                 instructions="focus on benefits",
             )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(convert_mock.call_args.kwargs["instructions"], "focus on benefits")
+        self.assertFalse(convert_mock.call_args.kwargs["tables"])
 
 
 if __name__ == "__main__":

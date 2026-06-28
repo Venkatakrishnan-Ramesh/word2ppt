@@ -166,6 +166,10 @@
             <input type="checkbox" id="diagrams" />
             Flow diagrams
           </label>
+          <label class="review-toggle">
+            <input type="checkbox" id="tables" checked />
+            Tables
+          </label>
           <label class="review-toggle" style="gap:.45rem">
             Max slides
             <input type="number" id="maxslides" min="5" max="200" value="80"
@@ -322,6 +326,7 @@
       fd.append('text', text);
       fd.append('review', document.getElementById('review').checked);
       fd.append('diagrams', document.getElementById('diagrams').checked);
+      fd.append('tables', document.getElementById('tables').checked);
       fd.append('max_slides', document.getElementById('maxslides').value || 80);
       const res = await fetch('/api/convert-text', { method: 'POST', body: fd });
       const data = await res.json();
@@ -358,6 +363,7 @@
     fd.append('file', file);
     fd.append('review', document.getElementById('review').checked);
     fd.append('diagrams', document.getElementById('diagrams').checked);
+    fd.append('tables', document.getElementById('tables').checked);
     fd.append('max_slides', document.getElementById('maxslides').value || 80);
     try {
       const res = await fetch('/api/convert', { method: 'POST', body: fd });
@@ -376,6 +382,7 @@
     // second review pass that can fail on rate limits and add noisy notes.
     fd.append('review', 'false');
     fd.append('diagrams', document.getElementById('diagrams').checked);
+    fd.append('tables', document.getElementById('tables').checked);
     fd.append('max_slides', document.getElementById('maxslides').value || 80);
     fd.append('instructions', instructions);
     fd.append('target_slides', lastResult?.slide_count || 0);
