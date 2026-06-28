@@ -369,7 +369,9 @@
 
   async function convertWithInstructions(source, instructions) {
     const fd = new FormData();
-    fd.append('review', document.getElementById('review').checked);
+    // Feedback-triggered reruns should always run the review pass, not just the
+    // initial planning pass.
+    fd.append('review', 'true');
     fd.append('diagrams', document.getElementById('diagrams').checked);
     fd.append('max_slides', document.getElementById('maxslides').value || 80);
     fd.append('instructions', instructions);
@@ -405,7 +407,7 @@
     document.getElementById('r-engine').textContent = d.strategy;
 
     // Warn if Groq was available but the deck still fell back to the heuristic.
-    if (d.ai_enabled && d.strategy !== 'groq') {
+    if (d.ai_enabled && d.strategy !== 'ai') {
       setStatus('⚠ Groq was unavailable for this run — used the offline heuristic. Try again.', true);
     }
 
