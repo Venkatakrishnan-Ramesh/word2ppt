@@ -710,7 +710,7 @@
         <div class="controls-row">
           <div class="setting">
             <span class="label">Review</span>
-            <label class="toggle"><input type="checkbox" id="review" />Agentic review <span class="tag">extra tokens</span></label>
+            <label class="toggle"><input type="checkbox" id="review" checked />Agentic review <span class="tag">extra tokens</span></label>
           </div>
           <div class="setting">
             <span class="label">Tables</span>
@@ -1406,7 +1406,7 @@
     });
     document.getElementById('attach-file').addEventListener('click', () => {
       switchSourceTab('file');
-      queueMicrotask(() => document.getElementById('file').click());
+      document.getElementById('file').click();
     });
     document.getElementById('fb-comment').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
