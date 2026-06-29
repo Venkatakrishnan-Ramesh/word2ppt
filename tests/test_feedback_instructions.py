@@ -437,7 +437,7 @@ class FeedbackInstructionTests(unittest.TestCase):
         self.assertEqual(font_pt_right, 20)
         self.assertEqual(font_pt_down, 20)
 
-    def test_html_marks_diagram_only_slides_for_larger_preview(self) -> None:
+    def test_html_renders_diagram_only_slides_as_native_boxes(self) -> None:
         slide = Slide(
             title="Workflow",
             diagram=Diagram(direction="right", steps=["Start", "Finish"]),
@@ -446,6 +446,9 @@ class FeedbackInstructionTests(unittest.TestCase):
         rendered = _render_slide(slide)
 
         self.assertIn('class="diagram-slide"', rendered)
+        self.assertIn('class="diagram-flow right"', rendered)
+        self.assertIn('class="diagram-node"', rendered)
+        self.assertIn('class="diagram-arrow"', rendered)
 
     def test_html_forces_diagram_svg_to_fill_preview_height(self) -> None:
         from app.html_builder import render_html
@@ -458,8 +461,8 @@ class FeedbackInstructionTests(unittest.TestCase):
 
         rendered = render_html(deck)
 
-        self.assertIn("height: 78vh !important;", rendered)
-        self.assertIn("min-height: 78vh;", rendered)
+        self.assertIn("--diagram-fill", rendered)
+        self.assertIn("diagram-flow", rendered)
 
     def test_reviewer_prompt_corrects_layout_when_possible(self) -> None:
         settings = Settings(

@@ -1,8 +1,8 @@
 """Render a Deck into a single self-contained reveal.js HTML file.
 
-Flow diagrams become Mermaid ``flowchart`` blocks, which reveal.js renders as
-real SVG diagrams in the browser. Everything loads from CDNs, so the output is
-a single portable .html file.
+Flow diagrams render as native HTML boxes and arrows so they stay large and
+predictable in the browser. Everything loads from CDNs, so the output is a
+single portable .html file.
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ _TEMPLATE = """<!DOCTYPE html>
     --subtitle: #{subtitle_text};
     --table-header-text: #{table_header_text}; --table-stripe: #{table_stripe};
     --table-border: #{table_border};
+    --diagram-fill: #{diagram_fill}; --diagram-text: #{diagram_text};
   }}
   .reveal {{ font-family: "Inter", system-ui, sans-serif; color: var(--body); }}
   .reveal .slides section {{ color: var(--body); }}
@@ -39,22 +40,62 @@ _TEMPLATE = """<!DOCTYPE html>
   .reveal .subtitle {{ color: var(--subtitle); font-size: .6em; }}
   .reveal ul {{ display: block; }}
   .reveal li {{ margin: .35em 0; }}
-  .reveal .mermaid {{ display: flex; justify-content: center; }}
-  .reveal .mermaid svg {{
-    width: min(100%, 96vw) !important;
-    max-width: 96vw;
-    height: 78vh !important;
-    max-height: none;
-  }}
-  .reveal section.diagram-slide .mermaid {{
-    min-height: 78vh;
-    align-items: center;
-    width: 100%;
-  }}
   .reveal section.diagram-slide {{
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+  }}
+  .reveal .diagram-flow {{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    min-height: 74vh;
+    width: 100%;
+    margin-top: .75rem;
+  }}
+  .reveal .diagram-flow.right {{
+    flex-direction: row;
+    align-items: stretch;
+    gap: .8rem;
+    min-height: 58vh;
+  }}
+  .reveal .diagram-node {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--diagram-fill);
+    color: var(--diagram-text);
+    border: 4px solid var(--accent);
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+    min-width: clamp(10rem, 20vw, 18rem);
+    max-width: min(22vw, 18rem);
+    min-height: 8.5rem;
+    font-size: clamp(1rem, 1.8vw, 1.7rem);
+    line-height: 1.2;
+    font-weight: 700;
+    box-shadow: 0 1.2rem 2.2rem rgba(27, 42, 74, .08);
+  }}
+  .reveal .diagram-flow.right .diagram-node {{
+    min-height: 14rem;
+    min-width: clamp(12rem, 24vw, 20rem);
+  }}
+  .reveal .diagram-arrow {{
+    color: var(--accent);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    user-select: none;
+  }}
+  .reveal .diagram-flow.right .diagram-arrow {{
+    align-self: center;
   }}
   .reveal table {{ font-size: .5em; border-collapse: collapse; width: 100%; }}
   .reveal table th, .reveal table td {{
@@ -71,11 +112,7 @@ _TEMPLATE = """<!DOCTYPE html>
 {slides}
 </div></div>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>
-  mermaid.initialize({{ startOnLoad: true, theme: "{mermaid_theme}",
-    themeVariables: {{ primaryColor: "#{node_fill}", primaryBorderColor: "#{accent}",
-      lineColor: "#{accent}", primaryTextColor: "#{node_text}" }} }});
   Reveal.initialize({{ hash: true, slideNumber: "c/t", transition: "slide" }});
 </script>
 </body>
@@ -87,22 +124,17 @@ def _esc(text: str) -> str:
     return html.escape(text, quote=True)
 
 
-def _mermaid_for(diagram: Diagram) -> str:
-    direction = "LR" if diagram.direction == "right" else "TD"
-    lines = [f"flowchart {direction}"]
-    node_ids = [f"n{i}" for i in range(len(diagram.steps))]
-    for nid, label in zip(node_ids, diagram.steps):
-        safe = diagram_label_escape(label)
-        lines.append(f'  {nid}["{safe}"]')
-    for a, b in zip(node_ids, node_ids[1:]):
-        lines.append(f"  {a} --> {b}")
-    body = "\n".join(lines)
-    return f'<div class="mermaid">\n{body}\n</div>'
-
-
 def diagram_label_escape(label: str) -> str:
-    # Mermaid node labels in quotes: drop characters that break parsing.
-    return label.replace('"', "'").replace("\n", " ").strip()
+    return html.escape(label, quote=True).replace("\n", " ").strip()
+
+
+def _render_diagram(diagram: Diagram) -> str:
+    nodes = []
+    for i, label in enumerate(diagram.steps):
+        nodes.append(f'<div class="diagram-node">{diagram_label_escape(label)}</div>')
+        if i < len(diagram.steps) - 1:
+            nodes.append('<div class="diagram-arrow">→</div>' if diagram.direction == "right" else '<div class="diagram-arrow">↓</div>')
+    return f'<div class="diagram-flow {diagram.direction}">{"".join(nodes)}</div>'
 
 
 def _render_table(table: Table) -> str:
@@ -124,7 +156,7 @@ def _render_slide(slide: Slide) -> str:
         items = "".join(f"<li>{_esc(b)}</li>" for b in slide.bullets)
         parts.append(f"<ul>{items}</ul>")
     if slide.diagram:
-        parts.append(_mermaid_for(slide.diagram))
+        parts.append(_render_diagram(slide.diagram))
     if slide.table:
         parts.append(_render_table(slide.table))
     notes = f"<aside class=\"notes\">{_esc(slide.notes)}</aside>" if slide.notes else ""
@@ -148,7 +180,6 @@ def render_html(deck: Deck, theme: Theme = DEFAULT_THEME) -> str:
         title=_esc(deck.title),
         slides="\n".join(sections),
         reveal_theme="black" if theme.dark else "white",
-        mermaid_theme="dark" if theme.dark else "default",
         accent=theme.accent,
         accent_dark=theme.accent_dark,
         page_bg=theme.page_bg,
@@ -158,8 +189,8 @@ def render_html(deck: Deck, theme: Theme = DEFAULT_THEME) -> str:
         table_header_text=theme.table_header_text,
         table_stripe=theme.table_stripe,
         table_border=theme.table_border,
-        node_fill=theme.node_fill,
-        node_text=theme.node_text,
+        diagram_fill=theme.node_fill,
+        diagram_text=theme.node_text,
     )
 
 
