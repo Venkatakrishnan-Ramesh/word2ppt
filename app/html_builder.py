@@ -11,6 +11,7 @@ import html
 from pathlib import Path
 
 from .models import Deck, Diagram, Slide, Table
+from .themes import DEFAULT_THEME, Theme
 
 _TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -19,25 +20,33 @@ _TEMPLATE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{title}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/{reveal_theme}.css">
 <style>
-  :root {{ --accent: #2d5bff; --accent-dark: #1b2a4a; }}
-  .reveal {{ font-family: "Inter", system-ui, sans-serif; }}
-  .reveal h1, .reveal h2 {{ color: var(--accent-dark); text-transform: none; }}
+  :root {{
+    --accent: #{accent}; --accent-dark: #{accent_dark};
+    --page-bg: #{page_bg}; --heading: #{heading_text}; --body: #{body_text};
+    --subtitle: #{subtitle_text};
+    --table-header-text: #{table_header_text}; --table-stripe: #{table_stripe};
+    --table-border: #{table_border};
+  }}
+  .reveal {{ font-family: "Inter", system-ui, sans-serif; color: var(--body); }}
+  .reveal .slides section {{ color: var(--body); }}
+  .reveal h1, .reveal h2 {{ color: var(--heading); text-transform: none; }}
   .reveal section.title-slide {{ text-align: left; }}
   .reveal section.title-slide h1 {{
-    border-left: 8px solid var(--accent); padding-left: .5em; color: var(--accent-dark);
+    border-left: 8px solid var(--accent); padding-left: .5em; color: var(--heading);
   }}
-  .reveal .subtitle {{ color: #5a6781; font-size: .6em; }}
+  .reveal .subtitle {{ color: var(--subtitle); font-size: .6em; }}
   .reveal ul {{ display: block; }}
   .reveal li {{ margin: .35em 0; }}
   .reveal .mermaid {{ display: flex; justify-content: center; }}
   .reveal table {{ font-size: .5em; border-collapse: collapse; width: 100%; }}
   .reveal table th, .reveal table td {{
-    border: 1px solid #d3dcf0; padding: .25em .45em; text-align: left; vertical-align: top;
+    border: 1px solid var(--table-border); padding: .25em .45em;
+    text-align: left; vertical-align: top;
   }}
-  .reveal table th {{ background: var(--accent-dark); color: #fff; }}
-  .reveal table tr:nth-child(even) td {{ background: #f4f7ff; }}
+  .reveal table th {{ background: var(--accent-dark); color: var(--table-header-text); }}
+  .reveal table tr:nth-child(even) td {{ background: var(--table-stripe); }}
   .reveal .slide-number {{ background: transparent; color: var(--accent); }}
 </style>
 </head>
@@ -48,9 +57,9 @@ _TEMPLATE = """<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>
-  mermaid.initialize({{ startOnLoad: true, theme: "default",
-    themeVariables: {{ primaryColor: "#ecf1ff", primaryBorderColor: "#2d5bff",
-      lineColor: "#2d5bff", primaryTextColor: "#1b2a4a" }} }});
+  mermaid.initialize({{ startOnLoad: true, theme: "{mermaid_theme}",
+    themeVariables: {{ primaryColor: "#{node_fill}", primaryBorderColor: "#{accent}",
+      lineColor: "#{accent}", primaryTextColor: "#{node_text}" }} }});
   Reveal.initialize({{ hash: true, slideNumber: "c/t", transition: "slide" }});
 </script>
 </body>
@@ -114,13 +123,29 @@ def _title_section(deck: Deck) -> str:
     )
 
 
-def render_html(deck: Deck) -> str:
+def render_html(deck: Deck, theme: Theme = DEFAULT_THEME) -> str:
     """Build the self-contained reveal.js document as a string (stateless)."""
     sections = [_title_section(deck)] + [_render_slide(s) for s in deck.slides]
-    return _TEMPLATE.format(title=_esc(deck.title), slides="\n".join(sections))
+    return _TEMPLATE.format(
+        title=_esc(deck.title),
+        slides="\n".join(sections),
+        reveal_theme="black" if theme.dark else "white",
+        mermaid_theme="dark" if theme.dark else "default",
+        accent=theme.accent,
+        accent_dark=theme.accent_dark,
+        page_bg=theme.page_bg,
+        heading_text=theme.heading_text,
+        body_text=theme.body_text,
+        subtitle_text=theme.subtitle_text,
+        table_header_text=theme.table_header_text,
+        table_stripe=theme.table_stripe,
+        table_border=theme.table_border,
+        node_fill=theme.node_fill,
+        node_text=theme.node_text,
+    )
 
 
-def build_html(deck: Deck, out_path: Path) -> Path:
+def build_html(deck: Deck, out_path: Path, theme: Theme = DEFAULT_THEME) -> Path:
     """Convenience for local use / CLI: render and write to disk."""
-    out_path.write_text(render_html(deck), encoding="utf-8")
+    out_path.write_text(render_html(deck, theme), encoding="utf-8")
     return out_path

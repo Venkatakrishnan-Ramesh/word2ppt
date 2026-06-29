@@ -72,6 +72,56 @@
     color: var(--muted); font-size: .76rem; letter-spacing: .12em;
     text-transform: uppercase; font-weight: 700;
   }
+  .instr {
+    margin-top: .7rem; border: 1px solid var(--line); border-radius: 14px;
+    background: rgba(255,255,255,.03); padding: .35rem .9rem;
+  }
+  .instr > summary {
+    cursor: pointer; color: var(--muted); font-size: .8rem; font-weight: 700;
+    letter-spacing: .04em; padding: .5rem .1rem; list-style: none;
+  }
+  .instr > summary::-webkit-details-marker { display: none; }
+  .instr > summary::before { content: "▸ "; color: var(--accent); }
+  .instr[open] > summary::before { content: "▾ "; }
+  .instr-table { width: 100%; border-collapse: collapse; margin: .3rem 0 .6rem; }
+  .instr-table th, .instr-table td {
+    text-align: left; padding: .5rem .6rem; font-size: .82rem;
+    border-top: 1px solid var(--line); vertical-align: top; color: var(--text);
+  }
+  .instr-table th {
+    color: var(--muted); font-size: .68rem; letter-spacing: .1em;
+    text-transform: uppercase; border-top: 0;
+  }
+  .instr-table td:first-child { white-space: nowrap; font-weight: 600; }
+  .instr-table code {
+    background: #0e1426; border: 1px solid var(--line); border-radius: 6px;
+    padding: .1rem .4rem; font-size: .78rem; color: var(--accent);
+  }
+  #chat-log { display: flex; flex-direction: column; gap: .5rem; margin-bottom: .6rem; }
+  #chat-log:empty { display: none; }
+  .chat-msg {
+    max-width: 85%; padding: .55rem .8rem; border-radius: 12px;
+    font-size: .85rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word;
+  }
+  .chat-msg.you {
+    align-self: flex-end; background: rgba(45,91,255,.16);
+    border: 1px solid rgba(45,91,255,.35); color: var(--text);
+    border-bottom-right-radius: 4px;
+  }
+  .chat-msg.deck {
+    align-self: flex-start; background: rgba(255,255,255,.04);
+    border: 1px solid var(--line); color: var(--muted);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-memory {
+    display: flex; align-items: center; gap: .4rem 0.5rem; flex-wrap: wrap;
+    margin: .2rem 0 .2rem; font-size: .78rem;
+  }
+  .chat-memory-label { color: var(--muted); font-weight: 700; }
+  .chat-chip {
+    background: #0e1426; border: 1px solid var(--line); border-radius: 999px;
+    padding: .12rem .55rem; color: var(--text); font-size: .76rem;
+  }
   .tab {
     flex: 1; padding: .7rem 1rem; border-radius: 12px 12px 0 0; cursor: pointer;
     border: 1px solid var(--line); border-bottom: 0; background: rgba(255,255,255,.03);
@@ -165,30 +215,68 @@
     <div class="options">
       <span class="label">Options</span>
       <label class="review-toggle">
+        <input type="checkbox" id="review" />
+        Agentic review <span class="tag">Groq AI · extra tokens</span>
+      </label>
+      <label class="review-toggle">
         <input type="checkbox" id="tables" checked />
         Tables
       </label>
+      <label class="review-toggle">
+        <input type="checkbox" id="diagrams" />
+        Flow diagrams
+      </label>
+      <label class="review-toggle" style="gap:.45rem">
+        Max slides
+        <input type="number" id="maxslides" min="5" max="200" value="80"
+          style="width:62px; padding:.3rem .4rem; border-radius:8px;
+                 border:1px solid var(--line); background:#0e1426; color:var(--text);" />
+      </label>
     </div>
+
+    <details class="instr">
+      <summary>Instructions you can type <span class="tag">in the chat box below</span></summary>
+      <table class="instr-table">
+        <thead><tr><th>Instruction</th><th>What it does</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Theme name</td>
+            <td>Colours the whole deck. Choices:
+              <b>tamil nadu highways</b> · <b>government navy</b> ·
+              <b>emerald</b> · <b>maroon</b> · <b>slate dark</b> ·
+              <b>corporate blue</b> (default).</td>
+            <td><code>use the tamil nadu highways theme</code></td>
+          </tr>
+          <tr>
+            <td>Slide count</td>
+            <td>Targets a number of slides — splits content to reach it.</td>
+            <td><code>make it 23 slides</code></td>
+          </tr>
+          <tr>
+            <td>Flowchart direction</td>
+            <td>Lays out every flow diagram <b>horizontal</b> (left→right) or
+              <b>vertical</b> (top→bottom). Default is vertical.</td>
+            <td><code>make the flowcharts horizontal</code></td>
+          </tr>
+          <tr>
+            <td>Tone / wording</td>
+            <td>Steers register and phrasing. No points are dropped.</td>
+            <td><code>keep it formal and official</code></td>
+          </tr>
+          <tr>
+            <td>Free notes</td>
+            <td>Any other guidance for the next regenerate pass.</td>
+            <td><code>merge the two budget slides</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
 
     <div class="panel paste active" id="panel-paste">
       <label class="drop" style="cursor:auto">
         <textarea id="text" placeholder="Paste your document here — headings (#, ##), bullet lists, and Markdown tables become slides and flow diagrams…"></textarea>
         <div class="paste-actions">
           <button class="btn" id="gen-text" type="button">Generate slides</button>
-          <label class="review-toggle">
-            <input type="checkbox" id="review" />
-            Agentic review <span class="tag">Groq AI · extra tokens</span>
-          </label>
-          <label class="review-toggle">
-            <input type="checkbox" id="diagrams" />
-            Flow diagrams
-          </label>
-          <label class="review-toggle" style="gap:.45rem">
-            Max slides
-            <input type="number" id="maxslides" min="5" max="200" value="80"
-              style="width:62px; padding:.3rem .4rem; border-radius:8px;
-                     border:1px solid var(--line); background:#0e1426; color:var(--text);" />
-          </label>
           <span class="paste-hint" id="aimode">checking engine…</span>
         </div>
       </label>
@@ -228,20 +316,34 @@
 
     <section id="feedback" style="margin-top:2rem; border:1px solid var(--line);
       border-radius:16px; background:var(--panel); padding:1.2rem 1.3rem;">
-      <h3 style="margin:0 0 .2rem; font-size:1rem;">Review this deck</h3>
+      <h3 style="margin:0 0 .2rem; font-size:1rem;">Refine this deck — chat</h3>
       <p style="margin:0 0 .8rem; color:var(--muted); font-size:.85rem;">
-        Add a note, then regenerate the deck with that note applied. The slide count
-        stays close to the current version unless you change it.</p>
-      <div id="stars" style="font-size:1.5rem; color:#ffd166; letter-spacing:.15rem; cursor:pointer; user-select:none;">
-        <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
+        Tell it what to change, one message at a time. Every message is
+        <b>remembered</b> and re-applied together, so earlier tweaks (theme,
+        flowchart direction, slide count) are never lost.</p>
+
+      <div id="chat-log"></div>
+      <div id="chat-memory" class="chat-memory" hidden>
+        <span class="chat-memory-label">Remembered:</span>
+        <span id="chat-memory-chips"></span>
       </div>
-      <textarea id="fb-comment" placeholder="What worked, what didn't, what to improve…"
-        style="width:100%; min-height:90px; margin-top:.7rem; resize:vertical; color:var(--text);
+
+      <textarea id="fb-comment" placeholder="e.g. “use the tamil nadu highways theme”, then “make the flowcharts horizontal”…"
+        style="width:100%; min-height:80px; margin-top:.7rem; resize:vertical; color:var(--text);
         background:#0e1426; border:1px solid var(--line); border-radius:10px; padding:.8rem; font:inherit;"></textarea>
-      <div style="display:flex; align-items:center; gap:.9rem; margin-top:.7rem;">
-        <button class="btn" id="fb-apply" type="button">Apply note</button>
-        <button class="btn ghost" id="fb-send" type="button">Save note</button>
+      <div style="display:flex; align-items:center; gap:.9rem; margin-top:.7rem; flex-wrap:wrap;">
+        <button class="btn" id="fb-apply" type="button">Send</button>
+        <button class="btn ghost" id="chat-reset" type="button">Reset changes</button>
         <span id="fb-msg" style="color:var(--ok); font-size:.85rem;"></span>
+      </div>
+
+      <div style="margin-top:1.1rem; padding-top:.9rem; border-top:1px solid var(--line);
+        display:flex; align-items:center; gap:.9rem; flex-wrap:wrap;">
+        <span style="color:var(--muted); font-size:.8rem;">Rate this deck:</span>
+        <div id="stars" style="font-size:1.3rem; color:#ffd166; letter-spacing:.15rem; cursor:pointer; user-select:none;">
+          <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
+        </div>
+        <button class="btn ghost" id="fb-send" type="button">Save rating</button>
       </div>
     </section>
 
@@ -257,6 +359,40 @@
   const result = document.getElementById('result');
   let lastSource = null;
   let lastResult = null;
+  // Accumulated chat instructions for the current source. Re-sent in full on every
+  // refine so earlier changes (theme, direction, slide count) are not forgotten.
+  let chatTurns = [];
+
+  const chatLog = document.getElementById('chat-log');
+  const chatMemory = document.getElementById('chat-memory');
+  const chatMemoryChips = document.getElementById('chat-memory-chips');
+
+  function appendChat(role, text) {
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + role;
+    div.textContent = text;
+    chatLog.appendChild(div);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  function renderMemory() {
+    chatMemoryChips.textContent = '';
+    if (!chatTurns.length) { chatMemory.hidden = true; return; }
+    chatMemory.hidden = false;
+    chatTurns.forEach(t => {
+      const chip = document.createElement('span');
+      chip.className = 'chat-chip';
+      chip.textContent = t;
+      chatMemoryChips.appendChild(chip);
+    });
+  }
+
+  // Wipe chat memory when a brand-new deck is generated from a fresh source.
+  function resetChat() {
+    chatTurns = [];
+    chatLog.textContent = '';
+    renderMemory();
+  }
 
   // --- Feedback widget ---
   let fbRating = 0;
@@ -267,11 +403,11 @@
   starEls.forEach(s => s.addEventListener('click', () => {
     fbRating = Number(s.dataset.v); paintStars(fbRating);
   }));
+  // Save rating only (optionally with the current textarea note) — never regenerates.
   document.getElementById('fb-send').addEventListener('click', async () => {
     const comment = document.getElementById('fb-comment').value.trim();
     const msg = document.getElementById('fb-msg');
-    if (!fbRating && !comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Add a rating or a comment.'; return; }
-    if (!lastSource) { msg.style.color = '#ff6b6b'; msg.textContent = 'Generate a deck first.'; return; }
+    if (!fbRating && !comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Pick a star rating first.'; return; }
     const fd = new FormData();
     fd.append('rating', fbRating);
     fd.append('comment', comment);
@@ -280,33 +416,56 @@
       const res = await fetch('/api/feedback', { method: 'POST', body: fd });
       const d = await res.json();
       if (!res.ok) throw new Error(d.detail || 'Failed');
-      msg.style.color = 'var(--muted)';
-      msg.textContent = comment ? 'Saving your note and updating the deck…' : 'Note saved.';
-      if (comment) {
-        const data = await convertWithInstructions(lastSource, comment);
-        showResult(data, 'Your note was applied to this version.');
-        msg.style.color = 'var(--ok)'; msg.textContent = 'Note saved and deck updated.';
-        setStatus('Done.');
-      } else {
-        msg.style.color = 'var(--ok)'; msg.textContent = d.message || 'Thanks!';
-      }
-      document.getElementById('fb-comment').value = ''; fbRating = 0; paintStars(0);
+      msg.style.color = 'var(--ok)'; msg.textContent = d.message || 'Thanks!';
+      fbRating = 0; paintStars(0);
     } catch (e) {
       msg.style.color = '#ff6b6b'; msg.textContent = e.message;
     }
   });
 
-  document.getElementById('fb-apply').addEventListener('click', async () => {
-    const comment = document.getElementById('fb-comment').value.trim();
+  // Chat send: remember this instruction and re-apply ALL remembered instructions.
+  async function sendChat() {
+    const input = document.getElementById('fb-comment');
+    const comment = input.value.trim();
     const msg = document.getElementById('fb-msg');
-    if (!comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Add a note first.'; return; }
+    if (!comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Type a change first.'; return; }
     if (!lastSource) { msg.style.color = '#ff6b6b'; msg.textContent = 'Generate a deck first.'; return; }
-    msg.style.color = 'var(--muted)'; msg.textContent = 'Applying your note and regenerating the deck…';
+
+    chatTurns.push(comment);
+    renderMemory();
+    appendChat('you', comment);
+    input.value = '';
+    msg.style.color = 'var(--muted)'; msg.textContent = 'Applying all your changes…';
     try {
-      const data = await convertWithInstructions(lastSource, comment);
-      showResult(data, 'Your note was applied to this version.');
+      const data = await convertWithInstructions(lastSource, chatTurns.join('. '));
+      showResult(data, `Applied ${chatTurns.length} change${chatTurns.length > 1 ? 's' : ''}.`);
+      appendChat('deck', `Updated — theme: ${data.theme_label || '—'}, ${data.slide_count} slides, ${data.diagram_count} diagram(s).`);
       msg.style.color = 'var(--ok)'; msg.textContent = 'Deck updated.';
       setStatus('Done.');
+    } catch (e) {
+      // Roll back the failed turn so memory stays consistent with the deck shown.
+      chatTurns.pop();
+      renderMemory();
+      msg.style.color = '#ff6b6b'; msg.textContent = e.message;
+    }
+  }
+
+  document.getElementById('fb-apply').addEventListener('click', sendChat);
+  // Enter sends, Shift+Enter inserts a newline.
+  document.getElementById('fb-comment').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  });
+
+  document.getElementById('chat-reset').addEventListener('click', async () => {
+    const msg = document.getElementById('fb-msg');
+    if (!chatTurns.length) { msg.style.color = 'var(--muted)'; msg.textContent = 'No changes to reset.'; return; }
+    if (!lastSource) { resetChat(); return; }
+    resetChat();
+    msg.style.color = 'var(--muted)'; msg.textContent = 'Reverting to the original deck…';
+    try {
+      const data = await convertWithInstructions(lastSource, '', 0);
+      showResult(data, 'Reset to the original deck.');
+      msg.style.color = 'var(--ok)'; msg.textContent = 'Changes reset.';
     } catch (e) {
       msg.style.color = '#ff6b6b'; msg.textContent = e.message;
     }
@@ -332,6 +491,7 @@
     const text = document.getElementById('text').value.trim();
     if (!text) { setStatus('⚠ Paste some text first.', true); return; }
     lastSource = { kind: 'text', value: text };
+    resetChat();
     result.classList.remove('show');
     setStatus('<span class="spinner"></span>Generating slides from pasted text …');
     try {
@@ -370,6 +530,7 @@
 
   async function upload(file) {
     lastSource = { kind: 'file', value: file };
+    resetChat();
     result.classList.remove('show');
     setStatus('<span class="spinner"></span>Converting <b>' + file.name + '</b> …');
     const fd = new FormData();
@@ -389,7 +550,7 @@
     }
   }
 
-  async function convertWithInstructions(source, instructions) {
+  async function convertWithInstructions(source, instructions, targetSlides) {
     const fd = new FormData();
     // Feedback-triggered reruns should regenerate the deck directly, without a
     // second review pass that can fail on rate limits and add noisy notes.
@@ -398,7 +559,10 @@
     fd.append('tables', document.getElementById('tables').checked);
     fd.append('max_slides', document.getElementById('maxslides').value || 80);
     fd.append('instructions', instructions);
-    fd.append('target_slides', lastResult?.slide_count || 0);
+    // Keep the slide count stable while refining, unless an explicit override
+    // (e.g. 0 to restore the original) is passed.
+    const target = targetSlides === undefined ? (lastResult?.slide_count || 0) : targetSlides;
+    fd.append('target_slides', target);
     if (source.kind === 'text') {
       fd.append('text', source.value);
       const res = await fetch('/api/convert-text', { method: 'POST', body: fd });

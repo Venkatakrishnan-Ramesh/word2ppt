@@ -9,7 +9,7 @@ from pathlib import Path
 from .config import MAX_SLIDES, Settings, clamp_max_slides
 from .docx_parser import Block, parse_docx
 from .html_builder import render_html
-from .models import Deck
+from .models import Deck, Diagram, Slide
 from .pptx_builder import render_pptx
 from .reviewer import review_deck
 from .slide_planner import (
@@ -20,10 +20,40 @@ from .slide_planner import (
     strip_tables,
 )
 from .text_parser import parse_text
+from .themes import resolve_theme
 
 SUPPORTED_EXTS = {".docx", ".txt", ".md", ".markdown", ".text"}
 
 _SLIDE_COUNT_RE = re.compile(r"\b(\d{1,3})\s*slides?\b", re.IGNORECASE)
+
+# Phrases that force every flow diagram into a given layout direction.
+_HORIZONTAL_HINTS = ("horizontal", "left to right", "left-to-right", "side by side")
+_VERTICAL_HINTS = ("vertical", "top to bottom", "top-to-bottom", "top down", "top-down")
+
+
+def _forced_diagram_direction(instructions: str) -> str | None:
+    """Return 'right'/'down' if the user asked for a flowchart direction, else None."""
+    text = (instructions or "").lower()
+    if any(h in text for h in _HORIZONTAL_HINTS):
+        return "right"
+    if any(h in text for h in _VERTICAL_HINTS):
+        return "down"
+    return None
+
+
+def _apply_diagram_direction(deck: Deck, direction: str) -> Deck:
+    """Force every flow diagram in the deck to a single layout direction."""
+    slides = [
+        s.model_copy(
+            update={
+                "diagram": s.diagram.model_copy(update={"direction": direction})
+            }
+        )
+        if s.diagram
+        else s
+        for s in deck.slides
+    ]
+    return Deck(title=deck.title, subtitle=deck.subtitle, slides=slides)
 
 
 @dataclass(frozen=True)
@@ -34,6 +64,8 @@ class ConversionResult:
     html: str
     reviewed: bool = False
     review_notes: tuple[str, ...] = ()
+    theme: str = "corporate-blue"
+    theme_label: str = "Corporate Blue"
 
 
 def parse_source(path: Path) -> list[Block]:
@@ -184,6 +216,10 @@ def convert(
     if not blocks:
         raise ValueError("No readable content found in the uploaded file.")
 
+    # Theme is chosen by naming it in the instructions; resolve before we append
+    # our own slide-count guidance to the instruction text.
+    theme = resolve_theme(instructions)
+
     origin = source_name.strip() or source.stem
     fallback_title = origin.replace("_", " ").replace("-", " ").strip().title()
     if not fallback_title or fallback_title.lower().startswith("tmp"):
@@ -226,14 +262,20 @@ def convert(
     if not tables:
         deck = strip_tables(deck)
 
+    forced_direction = _forced_diagram_direction(instructions)
+    if forced_direction:
+        deck = _apply_diagram_direction(deck, forced_direction)
+
     if explicit_target:
         deck = _expand_to_target_slides(deck, explicit_target)
 
     return ConversionResult(
         deck=deck,
         strategy=strategy,
-        pptx_bytes=render_pptx(deck),
-        html=render_html(deck),
+        pptx_bytes=render_pptx(deck, theme),
+        html=render_html(deck, theme),
         reviewed=review,
         review_notes=review_notes,
+        theme=theme.name,
+        theme_label=theme.label,
     )

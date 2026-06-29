@@ -175,6 +175,8 @@ def _convert_bytes(
             "table_count": sum(1 for s in result.deck.slides if s.table),
             "reviewed": result.reviewed,
             "review_notes": list(result.review_notes),
+            "theme": result.theme,
+            "theme_label": result.theme_label,
             "html": result.html,
             "pptx_base64": base64.b64encode(result.pptx_bytes).decode("ascii"),
             "pptx_media_type": _PPTX_MEDIA,

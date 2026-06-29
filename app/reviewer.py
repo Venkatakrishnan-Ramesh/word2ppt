@@ -28,14 +28,22 @@ _REVIEW_SYSTEM = textwrap.dedent(
     Evaluate the draft against the ORIGINAL source for:
     - Tone: formal and official; remove any casual or marketing language.
     - Clarity: titles are formal and descriptive; bullets are clean formal phrases.
-    - Focus: one idea per slide; split or merge where needed.
     - Faithfulness: numbers, place names, scheme/section numbers, units and facts
       must match the source EXACTLY; nothing invented or dropped.
     - Form: tabular data should stay a table
       ({"headers":[str],"rows":[[str]]}). Only use a flow diagram
       ({"type":"flow","direction":"down"|"right","steps":[str]}) when content is
       genuinely sequential.
-    - Concision: tighten verbose cells and bullets without losing official detail.
+    - Wording: you MAY rephrase a bullet or table cell for a more formal register,
+      but only edit the text of an existing point in place.
+
+    PRESERVE ALL CONTENT — this is the most important rule:
+    - Never delete, drop, or merge away a bullet, table row, or point. Every point
+      in the draft must still appear in your output (rephrased at most).
+    - Do NOT condense or summarise multiple points into one. Keep them separate.
+    - You may SPLIT an overloaded slide into more slides, but never reduce the
+      total number of points. Prefer more slides over fewer.
+    - Keep at least as many bullets/rows on each topic as the draft has.
 
     Return ONLY JSON:
     {
@@ -46,7 +54,9 @@ _REVIEW_SYSTEM = textwrap.dedent(
                     "diagram": {...}|null, "table": {...}|null, "notes": str}]
       }
     }
-    Stay within the slide limit the user provides. Preserve ordering and meaning.
+    Stay within the slide limit the user provides, but never drop points to fit:
+    if content is too large, fill the slides densely rather than removing detail.
+    Preserve ordering, meaning, and the full set of points from the draft.
     """
 ).strip()
 
