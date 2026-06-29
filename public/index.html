@@ -268,29 +268,28 @@
     font-size: .84rem;
     line-height: 1.45;
   }
-  .instruction-guide table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: .84rem;
-    overflow: hidden;
-    border-radius: 14px;
-    background: #fff;
+  .instruction-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
   }
-  .instruction-guide th,
-  .instruction-guide td {
+  .instruction-list li {
     padding: 10px 12px;
-    text-align: left;
-    vertical-align: top;
-    border-bottom: 1px solid var(--line);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    font-size: .84rem;
+    line-height: 1.45;
   }
-  .instruction-guide th {
-    background: #f4f7fc;
+  .instruction-list b {
+    display: block;
+    margin-bottom: 2px;
+  }
+  .instruction-list span {
     color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    font-size: .68rem;
   }
-  .instruction-guide tr:last-child td { border-bottom: 0; }
 
   .chat-shell {
     min-height: 0;
@@ -734,43 +733,14 @@
         </div>
         <details class="instruction-guide" open>
           <summary>Default refine instructions</summary>
-          <p>These are the built-in prompts the chat should treat as first-class controls when a user refines a deck.</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Instruction</th>
-                <th>What it does</th>
-                <th>Example</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Theme name</td>
-                <td>Colours the whole deck. Choices: tamil nadu highways, government navy, emerald, maroon, slate dark, corporate blue (default).</td>
-                <td>use the tamil nadu highways theme</td>
-              </tr>
-              <tr>
-                <td>Slide count</td>
-                <td>Targets a number of slides and splits content to reach it.</td>
-                <td>make it 23 slides</td>
-              </tr>
-              <tr>
-                <td>Flowchart direction</td>
-                <td>Lays out every flow diagram horizontal (left to right) or vertical (top to bottom). Default is vertical.</td>
-                <td>make the flowcharts horizontal</td>
-              </tr>
-              <tr>
-                <td>Tone / wording</td>
-                <td>Steers register and phrasing. No points are dropped.</td>
-                <td>keep it formal and official</td>
-              </tr>
-              <tr>
-                <td>Free notes</td>
-                <td>Any other guidance for the next regenerate pass.</td>
-                <td>merge the two budget slides</td>
-              </tr>
-            </tbody>
-          </table>
+          <p>Built-in controls for the next refine pass.</p>
+          <ul class="instruction-list">
+            <li><b>Theme name</b><span>Colours the deck. Choices: tamil nadu highways, government navy, emerald, maroon, slate dark, corporate blue.</span></li>
+            <li><b>Slide count</b><span>Targets a slide count and splits content to reach it.</span></li>
+            <li><b>Flowchart direction</b><span>Sets flow diagrams horizontal or vertical.</span></li>
+            <li><b>Tone / wording</b><span>Steers register and phrasing.</span></li>
+            <li><b>Free notes</b><span>Any other guidance for the next regenerate pass.</span></li>
+          </ul>
         </details>
       </section>
 
