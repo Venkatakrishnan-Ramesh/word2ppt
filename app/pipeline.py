@@ -133,31 +133,43 @@ def _find_splittable_slide(slides) -> int | None:
 
 
 def _splittable_size(slide) -> int:
-    if slide.table and len(slide.table.rows) >= 4:
+    if slide.table and len(slide.table.rows) >= 6:
         return len(slide.table.rows)
-    if slide.diagram and len(slide.diagram.steps) >= 4:
+    if slide.diagram and len(slide.diagram.steps) >= 6:
         return len(slide.diagram.steps)
-    if len(slide.bullets) >= 4:
+    if len(slide.bullets) >= 6:
         return len(slide.bullets)
     return 0
 
 
 def _split_slide_balanced(slide):
     """Split a slide into two grouped slides, keeping chunks readable."""
-    if slide.table and len(slide.table.rows) >= 4:
+    if slide.table and len(slide.table.rows) >= 6:
         return _split_rows_balanced(slide)
-    if slide.diagram and len(slide.diagram.steps) >= 4:
+    if slide.diagram and len(slide.diagram.steps) >= 6:
         return _split_steps_balanced(slide)
-    if len(slide.bullets) >= 4:
+    if len(slide.bullets) >= 6:
         return _split_bullets_balanced(slide)
     return [slide]
 
 
+def _balanced_split_index(total: int, min_chunk: int = 3) -> int | None:
+    """Return a split index that keeps both chunks at least ``min_chunk`` long."""
+    if total < min_chunk * 2:
+        return None
+    split_at = total // 2
+    if split_at < min_chunk:
+        split_at = min_chunk
+    if total - split_at < min_chunk:
+        split_at = total - min_chunk
+    return split_at if min_chunk <= split_at <= total - min_chunk else None
+
+
 def _split_bullets_balanced(slide):
     bullets = list(slide.bullets)
-    split_at = max(2, len(bullets) // 2)
-    if len(bullets) - split_at < 2:
-        split_at = len(bullets) - 2
+    split_at = _balanced_split_index(len(bullets))
+    if split_at is None:
+        return [slide]
     left = bullets[:split_at]
     right = bullets[split_at:]
     if not left or not right:
@@ -170,9 +182,9 @@ def _split_bullets_balanced(slide):
 
 def _split_steps_balanced(slide):
     steps = list(slide.diagram.steps)
-    split_at = max(2, len(steps) // 2)
-    if len(steps) - split_at < 2:
-        split_at = len(steps) - 2
+    split_at = _balanced_split_index(len(steps))
+    if split_at is None:
+        return [slide]
     left = steps[:split_at]
     right = steps[split_at:]
     if not left or not right:
@@ -193,9 +205,9 @@ def _split_steps_balanced(slide):
 
 def _split_rows_balanced(slide):
     rows = list(slide.table.rows)
-    split_at = max(2, len(rows) // 2)
-    if len(rows) - split_at < 2:
-        split_at = len(rows) - 2
+    split_at = _balanced_split_index(len(rows))
+    if split_at is None:
+        return [slide]
     left = rows[:split_at]
     right = rows[split_at:]
     if not left or not right:

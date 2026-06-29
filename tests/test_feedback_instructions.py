@@ -320,9 +320,9 @@ class FeedbackInstructionTests(unittest.TestCase):
             title="Deck",
             subtitle="Source",
             slides=[
-                Slide(title="Intro", bullets=["One", "Two", "Three", "Four"]),
-                Slide(title="Next", bullets=["Five", "Six", "Seven", "Eight"]),
-                Slide(title="More", bullets=["Nine", "Ten", "Eleven", "Twelve"]),
+                Slide(title="Intro", bullets=["One", "Two", "Three", "Four", "Five", "Six"]),
+                Slide(title="Next", bullets=["Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen"]),
+                Slide(title="More", bullets=["Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"]),
             ],
         )
 
@@ -341,7 +341,7 @@ class FeedbackInstructionTests(unittest.TestCase):
             )
 
         self.assertGreaterEqual(len(result.deck.slides), 5)
-        self.assertTrue(all(len(slide.bullets) != 1 for slide in result.deck.slides if slide.bullets))
+        self.assertTrue(all(len(slide.bullets) >= 3 for slide in result.deck.slides if slide.bullets))
 
     def test_pipeline_keeps_bullet_chunks_grouped_when_expanding(self) -> None:
         settings = Settings(
@@ -361,8 +361,8 @@ class FeedbackInstructionTests(unittest.TestCase):
             subtitle="Source",
             slides=[
                 Slide(title="Intro", bullets=["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"]),
-                Slide(title="Middle", bullets=["B1", "B2", "B3", "B4", "B5", "B6"]),
-                Slide(title="End", bullets=["C1", "C2", "C3", "C4"]),
+                Slide(title="Middle", bullets=["B1", "B2", "B3", "B4", "B5", "B6", "B7"]),
+                Slide(title="End", bullets=["C1", "C2", "C3", "C4", "C5", "C6"]),
             ],
         )
 
@@ -381,8 +381,8 @@ class FeedbackInstructionTests(unittest.TestCase):
             )
 
         self.assertGreaterEqual(len(result.deck.slides), 5)
-        self.assertTrue(all(len(slide.bullets) != 1 for slide in result.deck.slides if slide.bullets))
-        self.assertTrue(any(len(slide.bullets) >= 2 for slide in result.deck.slides))
+        self.assertTrue(all(len(slide.bullets) >= 3 for slide in result.deck.slides if slide.bullets))
+        self.assertTrue(any(len(slide.bullets) >= 4 for slide in result.deck.slides))
 
     def test_pipeline_defaults_flow_diagrams_to_horizontal(self) -> None:
         settings = Settings(
