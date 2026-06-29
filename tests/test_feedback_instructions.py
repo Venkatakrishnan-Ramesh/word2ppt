@@ -447,7 +447,7 @@ class FeedbackInstructionTests(unittest.TestCase):
 
         self.assertIn('class="diagram-slide"', rendered)
 
-    def test_reviewer_prompt_ignores_diagram_size_layout_comments(self) -> None:
+    def test_reviewer_prompt_corrects_layout_when_possible(self) -> None:
         settings = Settings(
             groq_api_key="test-key",
             groq_model="test-model",
@@ -478,10 +478,9 @@ class FeedbackInstructionTests(unittest.TestCase):
         with patch("app.reviewer.groq_json", groq_json_stub):
             revised, notes = review_deck(deck, blocks, settings)
 
-        self.assertIn("do NOT critique visual sizing", _REVIEW_SYSTEM)
-        self.assertIn("looks small", _REVIEW_SYSTEM)
-        self.assertIn("do NOT critique visual sizing", seen["system"])
-        self.assertIn("layout", seen["system"].lower())
+        self.assertIn("the deck to fix it when possible", _REVIEW_SYSTEM)
+        self.assertIn("enlarging the content area", seen["system"].lower())
+        self.assertIn("corrected directly", seen["system"].lower())
         self.assertEqual(revised.title, "Deck")
         self.assertEqual(notes[0], "Kept content intact.")
 
