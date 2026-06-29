@@ -37,24 +37,24 @@ def _diagram_layout(
     roomy: bool,
 ) -> tuple[int, int, int, int, int, int]:
     short = count <= 3
-    top_margin = int(height * (0.16 if roomy else 0.24))
-    area_w = int(width * (0.93 if roomy else 0.86))
-    left_margin = int(width * (0.035 if roomy else 0.07))
+    top_margin = int(height * (0.11 if roomy else 0.24))
+    area_w = int(width * (0.96 if roomy else 0.86))
+    left_margin = int(width * (0.025 if roomy else 0.07))
 
     if direction == "right":
-        gap = int(area_w * (0.025 if roomy else 0.035))
+        gap = int(area_w * (0.02 if roomy else 0.035))
         if short:
-            gap = max(int(width * 0.018), gap)
+            gap = max(int(width * 0.015), gap)
         node_w = (area_w - gap * (count - 1)) // count
-        node_h = int(height * (0.30 if roomy and short else 0.24 if roomy else 0.19 if short else 0.16))
-        font_pt = 18 if roomy and short else 17 if short else 16
+        node_h = int(height * (0.36 if roomy and short else 0.28 if roomy else 0.19 if short else 0.16))
+        font_pt = 20 if roomy and short else 18 if roomy else 17 if short else 16
     else:
-        node_w = int(area_w * (0.82 if roomy and short else 0.72 if roomy else 0.62 if short else 0.5))
-        available = int(height * (0.78 if roomy and short else 0.72 if roomy else 0.66 if short else 0.62))
-        gap = int(available * (0.03 if roomy else 0.045))
+        node_w = int(area_w * (0.86 if roomy and short else 0.76 if roomy else 0.62 if short else 0.5))
+        available = int(height * (0.82 if roomy and short else 0.74 if roomy else 0.66 if short else 0.62))
+        gap = int(available * (0.025 if roomy else 0.045))
         node_h = (available - gap * (count - 1)) // count
-        node_h = min(node_h, int(height * (0.26 if roomy and short else 0.21 if roomy else 0.20 if short else 0.16)))
-        font_pt = 18 if roomy and short else 17 if short else 16
+        node_h = min(node_h, int(height * (0.30 if roomy and short else 0.24 if roomy else 0.20 if short else 0.16)))
+        font_pt = 20 if roomy and short else 18 if roomy else 17 if short else 16
 
     return left_margin, top_margin, area_w, gap, node_w, node_h, font_pt
 
@@ -294,17 +294,19 @@ def _add_content_slide(prs: Presentation, slide_data: Slide, theme: Theme) -> No
     accent.fill.fore_color.rgb = _rgb(theme.accent)
     accent.line.fill.background()
 
+    is_diagram_only = bool(slide_data.diagram and not slide_data.bullets and not slide_data.table)
+    title_top = int(prs.slide_height * (0.05 if is_diagram_only else 0.08))
+    title_h = int(prs.slide_height * (0.10 if is_diagram_only else 0.14))
     title_box = slide.shapes.add_textbox(
-        int(width * 0.08), int(prs.slide_height * 0.08),
-        int(width * 0.84), int(prs.slide_height * 0.14),
+        int(width * 0.08), title_top,
+        int(width * 0.84), title_h,
     )
     tp = title_box.text_frame.paragraphs[0]
     tp.text = slide_data.title
-    tp.font.size = Pt(30)
+    tp.font.size = Pt(26 if is_diagram_only else 30)
     tp.font.bold = True
     tp.font.color.rgb = _rgb(theme.heading_text)
 
-    is_diagram_only = bool(slide_data.diagram and not slide_data.bullets and not slide_data.table)
     if slide_data.bullets:
         _add_bullets(slide, slide_data, prs, theme)
     if slide_data.diagram:

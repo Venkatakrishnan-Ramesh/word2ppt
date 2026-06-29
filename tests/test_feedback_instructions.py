@@ -432,10 +432,10 @@ class FeedbackInstructionTests(unittest.TestCase):
             "down", 2, width, height, True
         )
 
-        self.assertGreaterEqual(node_h_right, int(height * 0.28))
-        self.assertGreaterEqual(node_h_down, int(height * 0.20))
-        self.assertEqual(font_pt_right, 18)
-        self.assertEqual(font_pt_down, 18)
+        self.assertGreaterEqual(node_h_right, int(height * 0.34))
+        self.assertGreaterEqual(node_h_down, int(height * 0.26))
+        self.assertEqual(font_pt_right, 20)
+        self.assertEqual(font_pt_down, 20)
 
     def test_html_marks_diagram_only_slides_for_larger_preview(self) -> None:
         slide = Slide(
