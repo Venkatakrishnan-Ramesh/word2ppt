@@ -424,7 +424,17 @@
     text-align: center;
   }
   .drop.drag { border-color: var(--accent); background: #eef4ff; }
-  input[type=file] { display: none; }
+  .file-picker {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
   .drop-zone {
     display: grid;
     place-items: center;
@@ -752,7 +762,6 @@
           <div class="composer-top">
             <div class="composer-actions">
               <button class="btn ghost" id="attach-text" type="button">Paste source</button>
-              <button class="btn ghost" id="attach-file" type="button">Upload file</button>
               <button class="btn ghost" id="chat-reset" type="button">Reset chat</button>
             </div>
             <button class="btn" id="fb-apply" type="button">Send</button>
@@ -772,7 +781,7 @@
             <div class="source-editor" id="source-editor">
               <div class="source-tabs">
                 <button class="tab active" id="source-tab-text" type="button">Paste text</button>
-                <button class="tab" id="source-tab-file" type="button">Upload file</button>
+                <button class="tab" id="source-tab-file" type="button">File source</button>
               </div>
               <div class="source-panel active" id="source-panel-text">
                 <textarea id="source-text" placeholder="Paste the document text here."></textarea>
@@ -790,7 +799,7 @@
                       <div class="hint">Word docs, PDFs, and text files work best.</div>
                     </div>
                     <label class="btn ghost" for="file">Choose file</label>
-                    <input id="file" type="file" accept=".doc,.docx,.pdf,.txt,.md,.rtf,.html,.htm" />
+                    <input class="file-picker" id="file" type="file" accept=".doc,.docx,.pdf,.txt,.md,.rtf,.html,.htm" />
                   </div>
                 </div>
               </div>
@@ -1374,10 +1383,6 @@
       switchSourceTab('text');
       queueMicrotask(() => els.sourceText.focus());
     });
-    document.getElementById('attach-file').addEventListener('click', () => {
-      switchSourceTab('file');
-      document.getElementById('file').click();
-    });
     document.getElementById('fb-comment').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -1427,7 +1432,9 @@
     }));
 
     document.getElementById('source-tab-text').addEventListener('click', () => switchSourceTab('text'));
-    document.getElementById('source-tab-file').addEventListener('click', () => switchSourceTab('file'));
+    document.getElementById('source-tab-file').addEventListener('click', () => {
+      switchSourceTab('file');
+    });
     document.getElementById('start-text').addEventListener('click', startTextChat);
     document.getElementById('file').addEventListener('change', () => {
       const file = document.getElementById('file').files[0];
