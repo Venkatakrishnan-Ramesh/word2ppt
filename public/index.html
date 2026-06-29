@@ -1511,12 +1511,15 @@
   }
 
   function paintChatState(session) {
-    const ready = Boolean(session.source);
+    const pendingText = Boolean(els.sourceText && els.sourceText.value.trim());
+    const ready = Boolean(session.source || pendingText);
     els.composer.placeholder = ready
       ? 'Ask for changes. Example: make it 30 slides, keep it formal, and make the flowcharts horizontal.'
       : 'Attach a source first, then ask for changes.';
     if (els.sendHint) {
-      els.sendHint.textContent = ready ? 'Ready to send.' : 'Attach a source first.';
+      els.sendHint.textContent = session.source
+        ? 'Ready to send.'
+        : (pendingText ? 'Pasted text will be attached on send.' : 'Attach a source first.');
     }
     const send = document.getElementById('fb-apply');
     if (send) send.disabled = !ready;
@@ -1606,14 +1609,20 @@
     addSystem(session, 'Source attached. Generating the initial deck...');
   }
 
+  function attachPendingTextSource(session) {
+    if (session.source) return true;
+    const text = els.sourceText.value.trim();
+    if (!text) return false;
+    attachTextSource(session, text);
+    return true;
+  }
+
   async function startTextChat() {
     const session = getActiveSession();
-    const text = els.sourceText.value.trim();
-    if (!text) {
+    if (!attachPendingTextSource(session)) {
       setStatus('Paste some text first.', true);
       return;
     }
-    attachTextSource(session, text);
     renderAll();
     await generateInitialDeck();
   }
@@ -1670,12 +1679,20 @@
   async function sendChat() {
     const session = getActiveSession();
     const comment = document.getElementById('fb-comment').value.trim();
-    if (!comment) {
-      setStatus('Type a change first.', true);
+    const hasTextSource = attachPendingTextSource(session);
+    if (!session.source && !hasTextSource) {
+      setStatus('Attach a source first.', true);
       return;
     }
-    if (!session.source) {
-      setStatus('Attach a source first.', true);
+    if (!session.source && hasTextSource) {
+      renderAll();
+      if (!comment) {
+        await generateInitialDeck();
+        return;
+      }
+    }
+    if (!comment) {
+      setStatus('Type a change first.', true);
       return;
     }
 
