@@ -41,19 +41,33 @@ def _forced_diagram_direction(instructions: str) -> str | None:
     return None
 
 
+def _default_diagram_direction(diagrams: bool, instructions: str) -> str | None:
+    """Pick the diagram direction to apply when the user did not specify one."""
+    forced = _forced_diagram_direction(instructions)
+    if forced:
+        return forced
+    return "right" if diagrams else None
+
+
 def _apply_diagram_direction(deck: Deck, direction: str) -> Deck:
     """Force every flow diagram in the deck to a single layout direction."""
-    slides = [
-        s.model_copy(
-            update={
-                "diagram": s.diagram.model_copy(update={"direction": direction})
-            }
-        )
-        if s.diagram
-        else s
-        for s in deck.slides
-    ]
+    slides = []
+    for slide in deck.slides:
+        if not slide.diagram:
+            slides.append(slide)
+            continue
+        diagram = _copy_model(slide.diagram, direction=direction)
+        slides.append(_copy_model(slide, diagram=diagram))
     return Deck(title=deck.title, subtitle=deck.subtitle, slides=slides)
+
+
+def _copy_model(obj, **updates):
+    """Return a new model instance with updates applied, regardless of Pydantic version."""
+    if hasattr(obj, "model_copy"):
+        return obj.model_copy(update=updates)
+    data = obj.model_dump() if hasattr(obj, "model_dump") else dict(obj.__dict__)
+    data.update(updates)
+    return obj.__class__(**data)
 
 
 @dataclass(frozen=True)
@@ -262,9 +276,9 @@ def convert(
     if not tables:
         deck = strip_tables(deck)
 
-    forced_direction = _forced_diagram_direction(instructions)
-    if forced_direction:
-        deck = _apply_diagram_direction(deck, forced_direction)
+    diagram_direction = _default_diagram_direction(diagrams, instructions)
+    if diagram_direction:
+        deck = _apply_diagram_direction(deck, diagram_direction)
 
     if explicit_target:
         deck = _expand_to_target_slides(deck, explicit_target)

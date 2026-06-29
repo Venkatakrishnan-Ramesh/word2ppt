@@ -171,7 +171,7 @@ _install_import_stubs()
 
 from app.config import Settings
 from app.docx_parser import Block
-from app.models import Deck, Slide
+from app.models import Deck, Diagram, Slide
 from app.pipeline import convert
 
 
@@ -384,6 +384,39 @@ class FeedbackInstructionTests(unittest.TestCase):
         self.assertTrue(all(len(slide.bullets) != 1 for slide in result.deck.slides if slide.bullets))
         self.assertTrue(any(len(slide.bullets) >= 2 for slide in result.deck.slides))
 
+    def test_pipeline_defaults_flow_diagrams_to_horizontal(self) -> None:
+        settings = Settings(
+            groq_api_key=None,
+            groq_model="test-model",
+            groq_fallback_model=None,
+            gemini_api_key=None,
+            gemini_model="test-gemini",
+            max_upload_bytes=1024,
+            groq_max_tokens=128,
+            groq_source_chars=256,
+            feedback_webhook_url=None,
+        )
+        blocks = [Block(kind="heading", level=1, text="Workflow")]
+        deck = Deck(
+            title="Deck",
+            subtitle="Source",
+            slides=[Slide(title="Workflow", diagram=Diagram(direction="down", steps=["Start", "Middle", "End"]))],
+        )
+
+        with (
+            patch("app.pipeline.parse_source", return_value=blocks),
+            patch("app.pipeline.plan_deck", return_value=(deck, "heuristic")),
+            patch("app.pipeline.render_pptx", return_value=b"pptx"),
+            patch("app.pipeline.render_html", return_value="<html />"),
+        ):
+            result = convert(
+                Path("/tmp/tmpabc123.md"),
+                settings,
+                diagrams=True,
+            )
+
+        self.assertEqual(result.deck.slides[0].diagram.direction, "right")
+
     def test_pipeline_can_disable_tables(self) -> None:
         settings = Settings(
             groq_api_key=None,
@@ -431,6 +464,8 @@ class FeedbackInstructionTests(unittest.TestCase):
                     },
                 )(),
                 "strategy": "heuristic",
+                "theme": "corporate-blue",
+                "theme_label": "Corporate Blue",
                 "html": "<html />",
                 "pptx_bytes": b"pptx",
                 "reviewed": False,

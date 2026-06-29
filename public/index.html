@@ -3,566 +3,1242 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>word2ppt · Word → Presentation</title>
+<title>word2ppt · Chat workspace</title>
 <style>
   :root {
-    --accent: #2d5bff;
-    --accent-dark: #1b2a4a;
-    --bg: #0c0f1a;
-    --panel: #141a2e;
-    --panel-2: #1b2440;
-    --line: #2a3553;
-    --text: #e7ecf7;
-    --muted: #93a0c2;
-    --ok: #36d399;
+    --bg: #f5f7fb;
+    --panel: #ffffff;
+    --panel-2: #f8fbff;
+    --line: #d9e2f0;
+    --line-strong: #bfd0e6;
+    --text: #132033;
+    --muted: #607086;
+    --accent: #2563eb;
+    --accent-2: #0f9f9f;
+    --good: #0f8b5f;
+    --bad: #c64555;
+    --shadow: 0 18px 44px rgba(26, 42, 67, 0.08);
+    --radius-xl: 24px;
+    --radius-lg: 18px;
+    --radius-md: 14px;
     --ease: cubic-bezier(0.16, 1, 0.3, 1);
   }
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
-    margin: 0; min-height: 100vh; color: var(--text);
-    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background:
-      radial-gradient(1100px 600px at 85% -10%, rgba(45,91,255,.25), transparent 60%),
-      radial-gradient(800px 500px at -10% 110%, rgba(54,211,153,.14), transparent 55%),
-      var(--bg);
-    display: flex; align-items: center; justify-content: center; padding: 5vw 4vw;
+      radial-gradient(900px 360px at 20% 0%, rgba(37, 99, 235, .08), transparent 60%),
+      radial-gradient(700px 320px at 92% 8%, rgba(15, 159, 159, .08), transparent 58%),
+      linear-gradient(180deg, #f8fbff, var(--bg));
   }
-  .shell { width: min(760px, 100%); }
-  header { margin-bottom: 1.8rem; }
-  .kicker {
-    font-size: .72rem; letter-spacing: .28em; text-transform: uppercase;
-    color: var(--accent); font-weight: 700;
+  .app {
+    width: min(1440px, calc(100vw - 20px));
+    margin: 0 auto;
+    padding: 10px 0 18px;
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 14px;
   }
-  h1 {
-    margin: .35rem 0 .4rem; font-size: clamp(2rem, 1.2rem + 3vw, 3.1rem);
-    line-height: 1.02; letter-spacing: -.02em;
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow);
+    overflow: hidden;
   }
-  h1 span { color: var(--muted); }
-  .lede { color: var(--muted); max-width: 48ch; line-height: 1.5; margin: 0; }
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 28px);
+  }
+  .sidebar-top {
+    padding: 16px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #fff, #fbfdff);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: -.06em;
+    background: linear-gradient(135deg, var(--accent), #5f7cff);
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.05;
+    letter-spacing: -.03em;
+  }
+  .brand p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: .8rem;
+    line-height: 1.35;
+  }
+  .new-chat {
+    margin-top: 12px;
+    width: 100%;
+  }
+  .sidebar-section {
+    padding: 14px 14px 0;
+  }
+  .sidebar-label {
+    margin: 0 0 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .16em;
+    font-size: .66rem;
+    font-weight: 800;
+  }
+  .chat-list {
+    padding: 0 10px 12px;
+    overflow: auto;
+    flex: 1;
+  }
+  .chat-item {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 12px 12px;
+    border-radius: 14px;
+    cursor: pointer;
+    text-align: left;
+    transition: background .18s var(--ease), border-color .18s var(--ease), transform .18s var(--ease);
+    margin-bottom: 6px;
+  }
+  .chat-item:hover { background: #f3f7fd; transform: translateY(-1px); }
+  .chat-item.active {
+    background: #eef4ff;
+    border-color: #d3e0ff;
+  }
+  .chat-item .title {
+    display: block;
+    color: var(--text);
+    font-weight: 700;
+    font-size: .9rem;
+    margin-bottom: 4px;
+  }
+  .chat-item .meta {
+    color: var(--muted);
+    font-size: .76rem;
+    line-height: 1.35;
+  }
+  .sidebar-footer {
+    padding: 14px 16px 16px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: .76rem;
+    line-height: 1.45;
+    background: linear-gradient(180deg, #fff, #fbfdff);
+  }
 
-  .drop {
-    margin-top: 2rem; border: 1.5px dashed var(--line); border-radius: 20px;
-    background: linear-gradient(180deg, var(--panel), var(--panel-2));
-    padding: 2.6rem 2rem; text-align: center; cursor: pointer;
-    transition: border-color .3s var(--ease), transform .3s var(--ease), background .3s;
+  .workspace {
+    min-height: calc(100vh - 28px);
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    gap: 12px;
   }
-  .drop:hover { border-color: var(--accent); transform: translateY(-2px); }
-  .drop.drag { border-color: var(--accent); background: linear-gradient(180deg, #18204a, #1d285200); }
-  .drop .icon {
-    width: 54px; height: 54px; margin: 0 auto .9rem; border-radius: 14px;
-    display: grid; place-items: center; font-size: 1.5rem;
-    background: rgba(45,91,255,.16); border: 1px solid rgba(45,91,255,.4);
+  .topbar {
+    padding: 16px 18px;
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px;
   }
-  .drop strong { font-size: 1.05rem; }
-  .drop .hint { color: var(--muted); font-size: .85rem; margin-top: .4rem; }
+  .topbar h2 {
+    margin: 0;
+    font-size: clamp(1.4rem, 1rem + 1vw, 2rem);
+    letter-spacing: -.03em;
+  }
+  .topbar .sub {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: .88rem;
+    line-height: 1.45;
+    max-width: 72ch;
+  }
+  .top-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
   .pill {
-    display: inline-block; margin-top: 1rem; font-size: .72rem; color: var(--muted);
-    background: rgba(255,255,255,.04); border: 1px solid var(--line);
-    padding: .3rem .7rem; border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .32rem .68rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--muted);
+    font-size: .77rem;
+    font-weight: 600;
   }
-  input[type=file] { display: none; }
+  .pill b { color: var(--text); }
 
-  .tabs { display: flex; gap: .5rem; margin-top: 2rem; }
-  .options {
-    display: flex; flex-wrap: wrap; gap: .7rem 1rem; align-items: center;
-    margin-top: 1rem; padding: .85rem 1rem; border: 1px solid var(--line);
-    border-radius: 14px; background: rgba(255,255,255,.03);
+  .controls {
+    padding: 14px 18px;
+    display: grid;
+    gap: 12px;
   }
-  .options .label {
-    color: var(--muted); font-size: .76rem; letter-spacing: .12em;
-    text-transform: uppercase; font-weight: 700;
+  .controls-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
   }
-  .instr {
-    margin-top: .7rem; border: 1px solid var(--line); border-radius: 14px;
-    background: rgba(255,255,255,.03); padding: .35rem .9rem;
+  .setting {
+    padding: 12px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+    background: var(--panel-2);
   }
-  .instr > summary {
-    cursor: pointer; color: var(--muted); font-size: .8rem; font-weight: 700;
-    letter-spacing: .04em; padding: .5rem .1rem; list-style: none;
+  .setting .label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    font-size: .65rem;
+    font-weight: 800;
   }
-  .instr > summary::-webkit-details-marker { display: none; }
-  .instr > summary::before { content: "▸ "; color: var(--accent); }
-  .instr[open] > summary::before { content: "▾ "; }
-  .instr-table { width: 100%; border-collapse: collapse; margin: .3rem 0 .6rem; }
-  .instr-table th, .instr-table td {
-    text-align: left; padding: .5rem .6rem; font-size: .82rem;
-    border-top: 1px solid var(--line); vertical-align: top; color: var(--text);
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    margin-top: 8px;
+    font-size: .86rem;
+    font-weight: 600;
+    user-select: none;
   }
-  .instr-table th {
-    color: var(--muted); font-size: .68rem; letter-spacing: .1em;
-    text-transform: uppercase; border-top: 0;
+  .toggle:first-child { margin-top: 0; }
+  .toggle input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .slide-input {
+    display: grid;
+    gap: 8px;
+    align-items: center;
+    grid-template-columns: 1fr auto;
+    margin-top: 10px;
   }
-  .instr-table td:first-child { white-space: nowrap; font-weight: 600; }
-  .instr-table code {
-    background: #0e1426; border: 1px solid var(--line); border-radius: 6px;
-    padding: .1rem .4rem; font-size: .78rem; color: var(--accent);
+  .slide-input span { color: var(--muted); font-size: .82rem; font-weight: 600; }
+  .slide-input input {
+    width: 84px;
+    padding: .58rem .55rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
   }
-  #chat-log { display: flex; flex-direction: column; gap: .5rem; margin-bottom: .6rem; }
-  #chat-log:empty { display: none; }
-  .chat-msg {
-    max-width: 85%; padding: .55rem .8rem; border-radius: 12px;
-    font-size: .85rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word;
+  .controls-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
   }
-  .chat-msg.you {
-    align-self: flex-end; background: rgba(45,91,255,.16);
-    border: 1px solid rgba(45,91,255,.35); color: var(--text);
-    border-bottom-right-radius: 4px;
+  .instruction-guide {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--panel-2);
   }
-  .chat-msg.deck {
-    align-self: flex-start; background: rgba(255,255,255,.04);
-    border: 1px solid var(--line); color: var(--muted);
-    border-bottom-left-radius: 4px;
+  .instruction-guide summary {
+    cursor: pointer;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    color: var(--text);
   }
-  .chat-memory {
-    display: flex; align-items: center; gap: .4rem 0.5rem; flex-wrap: wrap;
-    margin: .2rem 0 .2rem; font-size: .78rem;
+  .instruction-guide p {
+    margin: 8px 0 12px;
+    color: var(--muted);
+    font-size: .84rem;
+    line-height: 1.45;
   }
-  .chat-memory-label { color: var(--muted); font-weight: 700; }
-  .chat-chip {
-    background: #0e1426; border: 1px solid var(--line); border-radius: 999px;
-    padding: .12rem .55rem; color: var(--text); font-size: .76rem;
+  .instruction-guide table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .84rem;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #fff;
+  }
+  .instruction-guide th,
+  .instruction-guide td {
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line);
+  }
+  .instruction-guide th {
+    background: #f4f7fc;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: .68rem;
+  }
+  .instruction-guide tr:last-child td { border-bottom: 0; }
+
+  .chat-shell {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .composer,
+  .welcome {
+    padding: 16px 18px;
+  }
+  .welcome .heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .welcome h3,
+  .result-card h3,
+  .attach-shell h3 {
+    margin: 0;
+    font-size: 1rem;
+    letter-spacing: -.02em;
+  }
+  .welcome .sub,
+  .result-card .sub,
+  .attach-shell .sub {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: .84rem;
+    line-height: 1.45;
+  }
+  .source-status {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .source-status .pill { background: var(--panel-2); }
+  .attachment-bar {
+    padding: 0 18px;
+  }
+  .attachment-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .45rem .7rem;
+    border-radius: 999px;
+    border: 1px solid #d8e4ff;
+    background: #eef4ff;
+    color: var(--text);
+    font-size: .8rem;
+    font-weight: 600;
+    max-width: 100%;
+  }
+  .attachment-chip .name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: min(40vw, 420px);
+  }
+  .attachment-chip .badge {
+    padding: .1rem .4rem;
+    border-radius: 999px;
+    font-size: .62rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    background: #dfeaff;
+    color: var(--accent);
+  }
+  .attachment-chip button {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+  }
+  .attach-shell {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .source-editor {
+    margin-top: 12px;
+    display: grid;
+    gap: 10px;
+  }
+  .source-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
   .tab {
-    flex: 1; padding: .7rem 1rem; border-radius: 12px 12px 0 0; cursor: pointer;
-    border: 1px solid var(--line); border-bottom: 0; background: rgba(255,255,255,.03);
-    color: var(--muted); font-weight: 600; font-size: .9rem; text-align: center;
-    transition: color .2s, background .2s;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel-2);
+    color: var(--muted);
+    padding: 10px 12px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
   }
-  .tab.active { color: var(--text); background: var(--panel-2); border-color: var(--accent); }
-  .panel { display: none; }
-  .panel.active { display: block; }
-  .panel.paste { margin-top: 0; }
-  .paste .drop { margin-top: 0; border-radius: 0 0 20px 20px; padding: 1.2rem; }
+  .tab.active {
+    color: var(--text);
+    border-color: rgba(37, 99, 235, .24);
+    background: #eef4ff;
+  }
+  .source-panel { display: none; }
+  .source-panel.active { display: block; }
   textarea {
-    width: 100%; min-height: 230px; resize: vertical; color: var(--text);
-    background: #0e1426; border: 1px solid var(--line); border-radius: 12px;
-    padding: 1rem; font: inherit; font-size: .92rem; line-height: 1.5;
+    width: 100%;
+    min-height: 150px;
+    resize: vertical;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+    line-height: 1.55;
+    outline: none;
   }
-  textarea:focus { outline: none; border-color: var(--accent); }
-  .paste-actions { display: flex; align-items: center; gap: .9rem; margin-top: .9rem; flex-wrap: wrap; }
-  .paste-hint { color: var(--muted); font-size: .78rem; }
+  textarea:focus { border-color: rgba(37, 99, 235, .45); box-shadow: 0 0 0 3px rgba(37, 99, 235, .08); }
+  .drop {
+    border: 1px dashed var(--line-strong);
+    border-radius: 18px;
+    background: linear-gradient(180deg, #fff, var(--panel-2));
+    padding: 16px;
+    text-align: center;
+  }
+  .drop.drag { border-color: var(--accent); background: #eef4ff; }
+  input[type=file] { display: none; }
+  .drop-zone {
+    display: grid;
+    place-items: center;
+    gap: 10px;
+    min-height: 150px;
+  }
+  .drop-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 1.35rem;
+    background: linear-gradient(135deg, var(--accent), #5f7cff);
+  }
+  .hint {
+    color: var(--muted);
+    font-size: .8rem;
+    line-height: 1.45;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    padding: .72rem 1rem;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    font-size: .9rem;
+    text-decoration: none;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #5f7cff);
+    transition: transform .18s var(--ease), filter .18s var(--ease);
+  }
+  .btn:hover { transform: translateY(-1px); filter: brightness(1.02); }
+  .btn.ghost {
+    color: var(--text);
+    background: #fff;
+    border-color: var(--line);
+  }
+  .btn.wide { width: 100%; }
+  .action-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .helper {
+    color: var(--muted);
+    font-size: .78rem;
+    line-height: 1.45;
+  }
+  .helper code {
+    background: #eef4ff;
+    border: 1px solid var(--line);
+    padding: .12rem .36rem;
+    border-radius: 8px;
+    color: var(--accent);
+  }
 
-  .review-toggle {
-    display: flex; align-items: center; gap: .55rem; cursor: pointer;
-    color: var(--text); font-size: .85rem; font-weight: 600; user-select: none;
+  .messages {
+    min-height: 0;
+    overflow: auto;
+    padding: 0 18px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
-  .review-toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
-  .review-toggle .tag {
-    font-size: .64rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--accent); background: rgba(45,91,255,.14); border: 1px solid rgba(45,91,255,.35);
-    padding: .12rem .42rem; border-radius: 999px;
+  .message {
+    max-width: min(82%, 860px);
+    padding: 12px 14px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(26, 42, 67, 0.05);
+    line-height: 1.5;
+    font-size: .92rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .message.user {
+    align-self: flex-end;
+    background: #eff4ff;
+    border-color: #d7e2ff;
+  }
+  .message.assistant {
+    align-self: flex-start;
+  }
+  .message.system {
+    align-self: center;
+    max-width: 100%;
+    background: #fafcff;
+    color: var(--muted);
+    font-size: .84rem;
+  }
+  .message.deck {
+    align-self: stretch;
+    padding: 0;
+    overflow: hidden;
+  }
+  .deck-head {
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #fff, #f9fbff);
+  }
+  .deck-head .title {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: start;
+  }
+  .deck-head h4 {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+  .meta-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .deck-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .preview {
+    border-top: 1px solid var(--line);
+    background: #fff;
+  }
+  iframe {
+    width: 100%;
+    height: min(64vh, 620px);
+    border: 0;
+    background: #fff;
   }
   .notes {
-    border-top: 1px solid var(--line); padding: 1rem 1.3rem;
-    display: none; background: rgba(54,211,153,.05);
+    margin: 0 14px 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(15, 139, 95, .16);
+    background: rgba(15, 139, 95, .05);
+    border-radius: 16px;
+    display: none;
   }
   .notes.show { display: block; }
-  .notes h3 {
-    margin: 0 0 .5rem; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--ok);
+  .notes h5 {
+    margin: 0 0 4px;
+    color: var(--good);
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    font-size: .7rem;
   }
-  .notes ul { margin: 0; padding-left: 1.1rem; }
-  .notes li { color: var(--text); font-size: .85rem; margin: .3rem 0; }
+  .notes p {
+    margin: 0 0 6px;
+    color: var(--muted);
+    font-size: .82rem;
+  }
+  .notes ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .notes li {
+    margin: .28rem 0;
+    font-size: .84rem;
+    color: var(--text);
+  }
 
-  .status { margin-top: 1.4rem; min-height: 1.4rem; color: var(--muted); font-size: .9rem; }
-  .status.err { color: #ff6b6b; }
+  .composer {
+    padding: 14px 18px 16px;
+    border-top: 1px solid var(--line);
+    background: linear-gradient(180deg, #fff, #fbfdff);
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+  }
+  .composer .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: end;
+  }
+  .composer textarea {
+    min-height: 96px;
+    margin: 0;
+  }
+  .composer .status {
+    margin-top: 10px;
+    min-height: 1.2rem;
+    color: var(--muted);
+    font-size: .84rem;
+  }
+  .composer .status.err { color: var(--bad); }
+  .composer-top {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .composer-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .attach-shell[hidden] { display: none !important; }
+  .footer {
+    padding: 0 18px 2px;
+    color: var(--muted);
+    font-size: .75rem;
+  }
   .spinner {
-    width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--accent);
-    border-radius: 50%; display: inline-block; vertical-align: -3px; margin-right: .5rem;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(37,99,235,.18);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: -3px;
+    margin-right: .5rem;
     animation: spin .7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .result {
-    margin-top: 1.6rem; border: 1px solid var(--line); border-radius: 18px;
-    background: var(--panel); overflow: hidden; opacity: 0; transform: translateY(10px);
-    transition: opacity .4s var(--ease), transform .4s var(--ease);
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { min-height: 0; }
   }
-  .result.show { opacity: 1; transform: none; }
-  .result .top { padding: 1.2rem 1.3rem; display: flex; flex-wrap: wrap; gap: 1rem 1.4rem; align-items: baseline; }
-  .result .top h2 { margin: 0; font-size: 1.15rem; flex: 1 1 100%; }
-  .meta { color: var(--muted); font-size: .82rem; }
-  .meta b { color: var(--text); font-weight: 600; }
-  .badge { color: var(--ok); }
-  .actions { display: flex; flex-wrap: wrap; gap: .7rem; padding: 0 1.3rem 1.3rem; }
-  .btn {
-    border: 0; cursor: pointer; font: inherit; font-weight: 600; font-size: .9rem;
-    padding: .7rem 1.1rem; border-radius: 11px; text-decoration: none; color: #fff;
-    background: var(--accent); transition: transform .2s var(--ease), filter .2s;
+  @media (max-width: 760px) {
+    .app { width: min(100vw - 12px, 1440px); }
+    .controls-row, .composer .row, .source-tabs { grid-template-columns: 1fr; }
+    .topbar { padding: 14px; }
+    .messages { padding: 0 14px 4px; }
+    .composer { padding: 14px; }
+    iframe { height: 500px; }
+    .message { max-width: 100%; }
   }
-  .btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
-  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
-  iframe { width: 100%; height: 420px; border: 0; border-top: 1px solid var(--line); background: #fff; }
-  footer { margin-top: 2rem; color: var(--muted); font-size: .76rem; }
-  footer code { color: var(--text); background: rgba(255,255,255,.05); padding: .1rem .4rem; border-radius: 6px; }
 </style>
 </head>
 <body>
-  <div class="shell">
-    <header>
-      <div class="kicker">word2ppt</div>
-      <h1>Turn a document<br><span>into a real presentation.</span></h1>
-      <p class="lede">Drop a Word or text file. It's restructured into clean slides —
-        with flow diagrams for any process — and exported as an editable
-        <b>PowerPoint</b> and a shareable <b>HTML deck</b>.</p>
-    </header>
-
-    <div class="tabs">
-      <div class="tab active" id="tab-paste" data-target="panel-paste">✍ Paste text</div>
-      <div class="tab" id="tab-upload" data-target="panel-upload">⬆ Upload file</div>
-    </div>
-
-    <div class="options">
-      <span class="label">Options</span>
-      <label class="review-toggle">
-        <input type="checkbox" id="review" />
-        Agentic review <span class="tag">Groq AI · extra tokens</span>
-      </label>
-      <label class="review-toggle">
-        <input type="checkbox" id="tables" checked />
-        Tables
-      </label>
-      <label class="review-toggle">
-        <input type="checkbox" id="diagrams" />
-        Flow diagrams
-      </label>
-      <label class="review-toggle" style="gap:.45rem">
-        Max slides
-        <input type="number" id="maxslides" min="5" max="200" value="80"
-          style="width:62px; padding:.3rem .4rem; border-radius:8px;
-                 border:1px solid var(--line); background:#0e1426; color:var(--text);" />
-      </label>
-    </div>
-
-    <details class="instr">
-      <summary>Instructions you can type <span class="tag">in the chat box below</span></summary>
-      <table class="instr-table">
-        <thead><tr><th>Instruction</th><th>What it does</th><th>Example</th></tr></thead>
-        <tbody>
-          <tr>
-            <td>Theme name</td>
-            <td>Colours the whole deck. Choices:
-              <b>tamil nadu highways</b> · <b>government navy</b> ·
-              <b>emerald</b> · <b>maroon</b> · <b>slate dark</b> ·
-              <b>corporate blue</b> (default).</td>
-            <td><code>use the tamil nadu highways theme</code></td>
-          </tr>
-          <tr>
-            <td>Slide count</td>
-            <td>Targets a number of slides — splits content to reach it.</td>
-            <td><code>make it 23 slides</code></td>
-          </tr>
-          <tr>
-            <td>Flowchart direction</td>
-            <td>Lays out every flow diagram <b>horizontal</b> (left→right) or
-              <b>vertical</b> (top→bottom). Default is vertical.</td>
-            <td><code>make the flowcharts horizontal</code></td>
-          </tr>
-          <tr>
-            <td>Tone / wording</td>
-            <td>Steers register and phrasing. No points are dropped.</td>
-            <td><code>keep it formal and official</code></td>
-          </tr>
-          <tr>
-            <td>Free notes</td>
-            <td>Any other guidance for the next regenerate pass.</td>
-            <td><code>merge the two budget slides</code></td>
-          </tr>
-        </tbody>
-      </table>
-    </details>
-
-    <div class="panel paste active" id="panel-paste">
-      <label class="drop" style="cursor:auto">
-        <textarea id="text" placeholder="Paste your document here — headings (#, ##), bullet lists, and Markdown tables become slides and flow diagrams…"></textarea>
-        <div class="paste-actions">
-          <button class="btn" id="gen-text" type="button">Generate slides</button>
-          <span class="paste-hint" id="aimode">checking engine…</span>
+  <div class="app">
+    <aside class="card sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <div class="mark">w2</div>
+          <div>
+            <h1>word2ppt</h1>
+            <p>Chat workspace for turning docs into slides.</p>
+          </div>
         </div>
-      </label>
-    </div>
-
-    <div class="panel" id="panel-upload">
-      <label class="drop" id="drop">
-        <div class="icon">⬆</div>
-        <strong>Drop a file here, or click to choose</strong>
-        <div class="hint">.docx · .txt · .md — up to 20&nbsp;MB</div>
-        <input type="file" id="file" accept=".docx,.txt,.md,.markdown,.text" />
-      </label>
-    </div>
-
-    <div class="status" id="status"></div>
-
-    <div class="result" id="result">
-      <div class="top">
-        <h2 id="r-title"></h2>
-        <span class="meta"><b id="r-slides">0</b> slides</span>
-        <span class="meta"><b id="r-diagrams">0</b> diagrams</span>
-        <span class="meta" id="r-engine-wrap">Generated with <b class="badge" id="r-engine"></b></span>
-        <span class="meta"><b class="badge" id="r-reviewed"></b></span>
+        <button class="btn new-chat" id="new-chat" type="button">+ New chat</button>
       </div>
-      <div class="notes" id="notes">
-        <h3>Agentic review notes</h3>
-        <p id="notes-meta" style="margin:.1rem 0 .6rem; color:var(--muted); font-size:.8rem;"></p>
-        <ul id="notes-list"></ul>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Chats</div>
       </div>
-      <div class="actions">
-        <a class="btn" id="dl-pptx" download>Download .pptx</a>
-        <a class="btn ghost" id="dl-html" download>Download .html</a>
-        <a class="btn ghost" id="open-html" target="_blank">Open deck ↗</a>
+      <div class="chat-list" id="chat-list"></div>
+      <div class="sidebar-footer">
+        Fresh chat sessions keep their own instructions and deck state. File uploads live in the current browser session.
       </div>
-      <iframe id="preview" title="Deck preview"></iframe>
-    </div>
+    </aside>
 
-    <section id="feedback" style="margin-top:2rem; border:1px solid var(--line);
-      border-radius:16px; background:var(--panel); padding:1.2rem 1.3rem;">
-      <h3 style="margin:0 0 .2rem; font-size:1rem;">Refine this deck — chat</h3>
-      <p style="margin:0 0 .8rem; color:var(--muted); font-size:.85rem;">
-        Tell it what to change, one message at a time. Every message is
-        <b>remembered</b> and re-applied together, so earlier tweaks (theme,
-        flowchart direction, slide count) are never lost.</p>
-
-      <div id="chat-log"></div>
-      <div id="chat-memory" class="chat-memory" hidden>
-        <span class="chat-memory-label">Remembered:</span>
-        <span id="chat-memory-chips"></span>
-      </div>
-
-      <textarea id="fb-comment" placeholder="e.g. “use the tamil nadu highways theme”, then “make the flowcharts horizontal”…"
-        style="width:100%; min-height:80px; margin-top:.7rem; resize:vertical; color:var(--text);
-        background:#0e1426; border:1px solid var(--line); border-radius:10px; padding:.8rem; font:inherit;"></textarea>
-      <div style="display:flex; align-items:center; gap:.9rem; margin-top:.7rem; flex-wrap:wrap;">
-        <button class="btn" id="fb-apply" type="button">Send</button>
-        <button class="btn ghost" id="chat-reset" type="button">Reset changes</button>
-        <span id="fb-msg" style="color:var(--ok); font-size:.85rem;"></span>
-      </div>
-
-      <div style="margin-top:1.1rem; padding-top:.9rem; border-top:1px solid var(--line);
-        display:flex; align-items:center; gap:.9rem; flex-wrap:wrap;">
-        <span style="color:var(--muted); font-size:.8rem;">Rate this deck:</span>
-        <div id="stars" style="font-size:1.3rem; color:#ffd166; letter-spacing:.15rem; cursor:pointer; user-select:none;">
-          <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
+    <main class="workspace">
+      <header class="card topbar">
+        <div>
+          <h2 id="chat-title">New chat</h2>
+          <p class="sub" id="chat-sub">
+            Start with a source, then refine it with follow-up messages. Use New chat to reset everything.
+          </p>
         </div>
-        <button class="btn ghost" id="fb-send" type="button">Save rating</button>
-      </div>
-    </section>
+        <div class="top-pills">
+          <span class="pill"><b id="aimode">checking engine…</b></span>
+          <span class="pill"><b id="session-count">1</b> chats</span>
+        </div>
+      </header>
 
-    <footer>
-      Powered by Groq AI · government-formal output · diagrams &amp; tables optional.
-    </footer>
+      <section class="card controls">
+        <div class="controls-row">
+          <div class="setting">
+            <span class="label">Review</span>
+            <label class="toggle"><input type="checkbox" id="review" />Agentic review <span class="tag">extra tokens</span></label>
+          </div>
+          <div class="setting">
+            <span class="label">Tables</span>
+            <label class="toggle"><input type="checkbox" id="tables" checked />Keep tables</label>
+            <label class="toggle"><input type="checkbox" id="diagrams" />Keep flow diagrams</label>
+          </div>
+          <div class="setting">
+            <span class="label">Slides</span>
+            <label class="slide-input">
+              <span>Max slides</span>
+              <input type="number" id="maxslides" min="5" max="200" value="80" />
+            </label>
+          </div>
+          <div class="setting">
+            <span class="label">Source</span>
+            <div class="helper">Attach a Word/text source from the composer below, then keep chatting to refine the deck.</div>
+          </div>
+        </div>
+        <div class="controls-actions">
+          <button class="btn ghost" type="button" id="chat-reset-top">Reset current chat</button>
+        </div>
+        <details class="instruction-guide" open>
+          <summary>Default refine instructions</summary>
+          <p>These are the built-in prompts the chat should treat as first-class controls when a user refines a deck.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Instruction</th>
+                <th>What it does</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Theme name</td>
+                <td>Colours the whole deck. Choices: tamil nadu highways, government navy, emerald, maroon, slate dark, corporate blue (default).</td>
+                <td>use the tamil nadu highways theme</td>
+              </tr>
+              <tr>
+                <td>Slide count</td>
+                <td>Targets a number of slides and splits content to reach it.</td>
+                <td>make it 23 slides</td>
+              </tr>
+              <tr>
+                <td>Flowchart direction</td>
+                <td>Lays out every flow diagram horizontal (left to right) or vertical (top to bottom). Default is vertical.</td>
+                <td>make the flowcharts horizontal</td>
+              </tr>
+              <tr>
+                <td>Tone / wording</td>
+                <td>Steers register and phrasing. No points are dropped.</td>
+                <td>keep it formal and official</td>
+              </tr>
+              <tr>
+                <td>Free notes</td>
+                <td>Any other guidance for the next regenerate pass.</td>
+                <td>merge the two budget slides</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </section>
+
+      <section class="card chat-shell">
+        <div class="attachment-bar" id="attachment-bar"></div>
+        <section class="messages" id="chat-log"></section>
+
+        <section class="card composer">
+          <div class="composer-top">
+            <div class="composer-actions">
+              <button class="btn ghost" id="attach-text" type="button">Paste source</button>
+              <button class="btn ghost" id="attach-file" type="button">Upload file</button>
+              <button class="btn ghost" id="chat-reset" type="button">Reset chat</button>
+            </div>
+            <button class="btn" id="fb-apply" type="button">Send</button>
+          </div>
+          <section class="attach-shell" id="attach-shell">
+            <div class="heading">
+              <div>
+                <h3>Source</h3>
+                <p class="sub">Paste text or upload a file, then the deck appears below in the chat stream.</p>
+              </div>
+              <div class="action-row">
+                <span class="pill"><b id="source-mode">Text</b></span>
+                <button class="btn ghost" id="source-clear" type="button">Remove source</button>
+              </div>
+            </div>
+            <div class="source-status" id="source-status"></div>
+            <div class="source-editor" id="source-editor">
+              <div class="source-tabs">
+                <button class="tab active" id="source-tab-text" type="button">Paste text</button>
+                <button class="tab" id="source-tab-file" type="button">Upload file</button>
+              </div>
+              <div class="source-panel active" id="source-panel-text">
+                <textarea id="source-text" placeholder="Paste the document text here."></textarea>
+                <div class="action-row" style="margin-top:10px;">
+                  <button class="btn" id="start-text" type="button">Attach text</button>
+                  <span class="helper">Use this for copied Word or doc text.</span>
+                </div>
+              </div>
+              <div class="source-panel" id="source-panel-file">
+                <div class="drop" id="drop">
+                  <div class="drop-zone">
+                    <div class="drop-icon">⇪</div>
+                    <div>
+                      <div style="font-weight:700;">Drop a file here</div>
+                      <div class="hint">Word docs, PDFs, and text files work best.</div>
+                    </div>
+                    <label class="btn ghost" for="file">Choose file</label>
+                    <input id="file" type="file" accept=".doc,.docx,.pdf,.txt,.md,.rtf,.html,.htm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <textarea id="fb-comment" placeholder="Ask for changes. Example: make it 30 slides, then make the flowcharts horizontal."></textarea>
+          <div class="composer-top" style="margin-top:10px;">
+            <div class="status" id="fb-msg"></div>
+            <div class="action-row" style="justify-content:flex-end;">
+              <span class="helper">Enter sends, Shift+Enter adds a newline.</span>
+            </div>
+          </div>
+          <div style="margin-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:12px;">
+            <span class="helper" style="font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.14em;">Rate this deck</span>
+            <div id="stars" style="font-size:1.35rem; color:#f5b800; letter-spacing:.16rem; cursor:pointer; user-select:none;">
+              <span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span>
+            </div>
+          </div>
+        </section>
+
+        <div class="footer">Powered by Groq AI · editable PowerPoint + browser preview · fresh chat sessions are independent.</div>
+      </section>
+    </main>
   </div>
 
 <script>
-  const drop = document.getElementById('drop');
-  const fileInput = document.getElementById('file');
-  const statusEl = document.getElementById('status');
-  const result = document.getElementById('result');
-  let lastSource = null;
-  let lastResult = null;
-  // Accumulated chat instructions for the current source. Re-sent in full on every
-  // refine so earlier changes (theme, direction, slide count) are not forgotten.
-  let chatTurns = [];
+  const STORAGE_KEY = 'word2ppt-chat-workspaces-v1';
+  const state = {
+    sessions: [],
+    activeId: null,
+  };
 
-  const chatLog = document.getElementById('chat-log');
-  const chatMemory = document.getElementById('chat-memory');
-  const chatMemoryChips = document.getElementById('chat-memory-chips');
+  const els = {
+    chatList: document.getElementById('chat-list'),
+    chatTitle: document.getElementById('chat-title'),
+    chatSub: document.getElementById('chat-sub'),
+    sessionCount: document.getElementById('session-count'),
+    sourceStatus: document.getElementById('source-status'),
+    sourceText: document.getElementById('source-text'),
+    sourceEditor: document.getElementById('source-editor'),
+    sourceTabText: document.getElementById('source-tab-text'),
+    sourceTabFile: document.getElementById('source-tab-file'),
+    sourcePanelText: document.getElementById('source-panel-text'),
+    sourcePanelFile: document.getElementById('source-panel-file'),
+    attachmentBar: document.getElementById('attachment-bar'),
+    chatLog: document.getElementById('chat-log'),
+    status: document.getElementById('fb-msg'),
+    composer: document.getElementById('fb-comment'),
+  };
 
-  function appendChat(role, text) {
-    const div = document.createElement('div');
-    div.className = 'chat-msg ' + role;
-    div.textContent = text;
-    chatLog.appendChild(div);
-    chatLog.scrollTop = chatLog.scrollHeight;
+  function uid() {
+    return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
   }
 
-  function renderMemory() {
-    chatMemoryChips.textContent = '';
-    if (!chatTurns.length) { chatMemory.hidden = true; return; }
-    chatMemory.hidden = false;
-    chatTurns.forEach(t => {
-      const chip = document.createElement('span');
-      chip.className = 'chat-chip';
-      chip.textContent = t;
-      chatMemoryChips.appendChild(chip);
+  function safeJsonParse(raw) {
+    try { return JSON.parse(raw); } catch { return null; }
+  }
+
+  function serializeSession(session) {
+    return {
+      id: session.id,
+      title: session.title,
+      source: session.source ? {
+        kind: session.source.kind,
+        label: session.source.label,
+        text: session.source.kind === 'text' ? session.source.text : undefined,
+        restored: session.source.kind === 'file' ? !session.source.file : false,
+      } : null,
+      messages: session.messages,
+      chatTurns: session.chatTurns,
+      notesMetaText: session.notesMetaText,
+      sourceTab: session.sourceTab,
+      result: session.result,
+    };
+  }
+
+  function deserializeSession(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const source = raw.source ? {
+      kind: raw.source.kind === 'file' ? 'file' : 'text',
+      label: raw.source.label || 'Source',
+      text: raw.source.kind === 'text' ? String(raw.source.text || '') : undefined,
+      file: null,
+      restored: Boolean(raw.source.restored),
+    } : null;
+    return {
+      id: String(raw.id || uid()),
+      title: String(raw.title || 'New chat'),
+      source,
+      messages: Array.isArray(raw.messages) ? raw.messages.filter(m => m && m.role && typeof m.text === 'string') : [],
+      chatTurns: Array.isArray(raw.chatTurns) ? raw.chatTurns.filter(v => typeof v === 'string') : [],
+      result: raw.result && typeof raw.result === 'object' ? raw.result : null,
+      notesMetaText: String(raw.notesMetaText || ''),
+      sourceTab: raw.sourceTab === 'file' ? 'file' : 'text',
+      pending: false,
+    };
+  }
+
+  function loadState() {
+    try {
+      const raw = safeJsonParse(localStorage.getItem(STORAGE_KEY));
+      const sessions = Array.isArray(raw?.sessions)
+        ? raw.sessions.map(deserializeSession).filter(Boolean)
+        : [];
+      state.sessions = sessions.length ? sessions : [newSession(false)];
+      state.activeId = raw?.activeId && state.sessions.some(s => s.id === raw.activeId)
+        ? raw.activeId
+        : state.sessions[0].id;
+    } catch {
+      state.sessions = [newSession(false)];
+      state.activeId = state.sessions[0].id;
+    }
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          activeId: state.activeId,
+          sessions: state.sessions.map(serializeSession),
+        })
+      );
+    } catch {
+      // Ignore quota / private-mode write errors.
+    }
+  }
+
+  function newSession(prepend = true) {
+    const session = {
+      id: uid(),
+      title: 'New chat',
+      source: null,
+      messages: [],
+      chatTurns: [],
+      result: null,
+      notesMetaText: '',
+      sourceTab: 'text',
+      pending: false,
+    };
+    state.sessions = prepend ? [session, ...state.sessions] : [...state.sessions, session];
+    state.activeId = session.id;
+    return session;
+  }
+
+  function getActiveSession() {
+    return state.sessions.find(s => s.id === state.activeId) || state.sessions[0];
+  }
+
+  function ensureSession() {
+    if (!state.sessions.length) {
+      newSession();
+    }
+  }
+
+  function setActive(id) {
+    state.activeId = id;
+    renderAll();
+  }
+
+  function activeTitle(session) {
+    if (!session) return 'New chat';
+    if (session.source?.label) return session.source.label;
+    if (session.title && session.title !== 'New chat') return session.title;
+    return 'New chat';
+  }
+
+  function setSessionTitleFromMessage(session, text) {
+    if (!session || session.title !== 'New chat') return;
+    const compact = text.replace(/\s+/g, ' ').trim();
+    session.title = compact.length > 28 ? compact.slice(0, 28).trim() + '…' : compact;
+  }
+
+  function addMessage(session, role, text) {
+    session.messages = [...session.messages, { role, text }];
+  }
+
+  function addSystem(session, text) {
+    addMessage(session, 'system', text);
+  }
+
+  function renderAll() {
+    ensureSession();
+    const session = getActiveSession();
+    els.sessionCount.textContent = state.sessions.length;
+    els.chatTitle.textContent = activeTitle(session);
+    els.chatSub.textContent = session.source
+      ? `Source attached: ${session.source.label}. Keep chatting to refine the deck or start a new chat for a fresh start.`
+      : 'Attach a source, generate the initial deck, then keep refining in the same thread.';
+    renderSidebar();
+    renderSource(session);
+    renderAttachment(session);
+    renderMessages(session);
+    renderResult(session);
+    paintChatState(session);
+    els.chatLog.scrollTop = els.chatLog.scrollHeight;
+    saveState();
+  }
+
+  function renderSidebar() {
+    els.chatList.innerHTML = '';
+    state.sessions.forEach(session => {
+      const btn = document.createElement('button');
+      btn.className = 'chat-item' + (session.id === state.activeId ? ' active' : '');
+      btn.type = 'button';
+      btn.innerHTML = `
+        <span class="title">${escapeHtml(activeTitle(session))}</span>
+        <span class="meta">${session.source ? escapeHtml(session.source.label) : 'No source yet'} · ${session.messages.length} message${session.messages.length === 1 ? '' : 's'}</span>
+      `;
+      btn.addEventListener('click', () => setActive(session.id));
+      els.chatList.appendChild(btn);
     });
   }
 
-  // Wipe chat memory when a brand-new deck is generated from a fresh source.
-  function resetChat() {
-    chatTurns = [];
-    chatLog.textContent = '';
-    renderMemory();
-  }
-
-  // --- Feedback widget ---
-  let fbRating = 0;
-  const starEls = document.querySelectorAll('#stars span');
-  function paintStars(n) {
-    starEls.forEach(s => { s.textContent = Number(s.dataset.v) <= n ? '★' : '☆'; });
-  }
-  starEls.forEach(s => s.addEventListener('click', () => {
-    fbRating = Number(s.dataset.v); paintStars(fbRating);
-  }));
-  // Save rating only (optionally with the current textarea note) — never regenerates.
-  document.getElementById('fb-send').addEventListener('click', async () => {
-    const comment = document.getElementById('fb-comment').value.trim();
-    const msg = document.getElementById('fb-msg');
-    if (!fbRating && !comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Pick a star rating first.'; return; }
-    const fd = new FormData();
-    fd.append('rating', fbRating);
-    fd.append('comment', comment);
-    fd.append('context', navigator.userAgent.slice(0, 120));
-    try {
-      const res = await fetch('/api/feedback', { method: 'POST', body: fd });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.detail || 'Failed');
-      msg.style.color = 'var(--ok)'; msg.textContent = d.message || 'Thanks!';
-      fbRating = 0; paintStars(0);
-    } catch (e) {
-      msg.style.color = '#ff6b6b'; msg.textContent = e.message;
+  function renderSource(session) {
+    if (!session.source) {
+      els.sourceStatus.innerHTML = '<span class="pill">No source attached</span>';
+      els.sourceEditor.style.display = 'grid';
+      els.sourceText.value = '';
+      document.getElementById('file').value = '';
+      document.getElementById('source-mode').textContent = 'Text';
+      els.sourceTabText.classList.toggle('active', session.sourceTab !== 'file');
+      els.sourceTabFile.classList.toggle('active', session.sourceTab === 'file');
+      els.sourcePanelText.classList.toggle('active', session.sourceTab !== 'file');
+      els.sourcePanelFile.classList.toggle('active', session.sourceTab === 'file');
+      return;
     }
-  });
 
-  // Chat send: remember this instruction and re-apply ALL remembered instructions.
-  async function sendChat() {
-    const input = document.getElementById('fb-comment');
-    const comment = input.value.trim();
-    const msg = document.getElementById('fb-msg');
-    if (!comment) { msg.style.color = '#ff6b6b'; msg.textContent = 'Type a change first.'; return; }
-    if (!lastSource) { msg.style.color = '#ff6b6b'; msg.textContent = 'Generate a deck first.'; return; }
-
-    chatTurns.push(comment);
-    renderMemory();
-    appendChat('you', comment);
-    input.value = '';
-    msg.style.color = 'var(--muted)'; msg.textContent = 'Applying all your changes…';
-    try {
-      const data = await convertWithInstructions(lastSource, chatTurns.join('. '));
-      showResult(data, `Applied ${chatTurns.length} change${chatTurns.length > 1 ? 's' : ''}.`);
-      appendChat('deck', `Updated — theme: ${data.theme_label || '—'}, ${data.slide_count} slides, ${data.diagram_count} diagram(s).`);
-      msg.style.color = 'var(--ok)'; msg.textContent = 'Deck updated.';
-      setStatus('Done.');
-    } catch (e) {
-      // Roll back the failed turn so memory stays consistent with the deck shown.
-      chatTurns.pop();
-      renderMemory();
-      msg.style.color = '#ff6b6b'; msg.textContent = e.message;
-    }
-  }
-
-  document.getElementById('fb-apply').addEventListener('click', sendChat);
-  // Enter sends, Shift+Enter inserts a newline.
-  document.getElementById('fb-comment').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
-  });
-
-  document.getElementById('chat-reset').addEventListener('click', async () => {
-    const msg = document.getElementById('fb-msg');
-    if (!chatTurns.length) { msg.style.color = 'var(--muted)'; msg.textContent = 'No changes to reset.'; return; }
-    if (!lastSource) { resetChat(); return; }
-    resetChat();
-    msg.style.color = 'var(--muted)'; msg.textContent = 'Reverting to the original deck…';
-    try {
-      const data = await convertWithInstructions(lastSource, '', 0);
-      showResult(data, 'Reset to the original deck.');
-      msg.style.color = 'var(--ok)'; msg.textContent = 'Changes reset.';
-    } catch (e) {
-      msg.style.color = '#ff6b6b'; msg.textContent = e.message;
-    }
-  });
-
-  fetch('/api/health').then(r => r.json()).then(h => {
-    document.getElementById('aimode').textContent =
-      h.ai_enabled ? `AI engine: ${h.model}` : 'heuristic engine (no API key set)';
-  }).catch(() => {});
-
-  // Tab switching between paste and upload.
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.target).classList.add('active');
+    const restoredNote = session.source.kind === 'file' && !session.source.file
+      ? '<span class="pill">Restored preview only</span>'
+      : '';
+    els.sourceStatus.innerHTML = `
+      <span class="pill"><b>Source</b>: ${escapeHtml(session.source.label)}</span>
+      <span class="pill">${session.source.kind === 'file' ? 'File' : 'Text'}</span>
+      ${restoredNote}
+      <button class="btn ghost" id="replace-source" type="button">Replace</button>
+      <button class="btn ghost" id="clear-source" type="button">Remove</button>
+    `;
+    els.sourceText.value = session.source.kind === 'text' ? session.source.text : '';
+    document.getElementById('file').value = '';
+    document.getElementById('source-mode').textContent = session.source.kind === 'file' ? 'File' : 'Text';
+    els.sourceEditor.style.display = 'grid';
+    queueMicrotask(() => {
+      const replace = document.getElementById('replace-source');
+      const clear = document.getElementById('clear-source');
+      if (replace) replace.addEventListener('click', () => {
+        session.source = null;
+        session.sourceTab = 'text';
+        renderAll();
+      });
+      if (clear) clear.addEventListener('click', () => {
+        session.source = null;
+        session.sourceTab = 'text';
+        renderAll();
+      });
     });
-  });
-
-  // Generate from pasted text.
-  document.getElementById('gen-text').addEventListener('click', async () => {
-    const text = document.getElementById('text').value.trim();
-    if (!text) { setStatus('⚠ Paste some text first.', true); return; }
-    lastSource = { kind: 'text', value: text };
-    resetChat();
-    result.classList.remove('show');
-    setStatus('<span class="spinner"></span>Generating slides from pasted text …');
-    try {
-      const fd = new FormData();
-      fd.append('text', text);
-      fd.append('review', document.getElementById('review').checked);
-      fd.append('diagrams', document.getElementById('diagrams').checked);
-      fd.append('tables', document.getElementById('tables').checked);
-      fd.append('max_slides', document.getElementById('maxslides').value || 80);
-      const res = await fetch('/api/convert-text', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Conversion failed');
-      showResult(data);
-      setStatus('Done.');
-    } catch (err) {
-      setStatus('⚠ ' + err.message, true);
-    }
-  });
-
-  ['dragenter', 'dragover'].forEach(ev =>
-    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
-  ['dragleave', 'drop'].forEach(ev =>
-    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
-  drop.addEventListener('drop', e => {
-    const f = e.dataTransfer.files?.[0];
-    if (f) upload(f);
-  });
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) upload(fileInput.files[0]);
-  });
-
-  function setStatus(msg, isErr) {
-    statusEl.className = 'status' + (isErr ? ' err' : '');
-    statusEl.innerHTML = msg;
   }
 
-  async function upload(file) {
-    lastSource = { kind: 'file', value: file };
-    resetChat();
-    result.classList.remove('show');
-    setStatus('<span class="spinner"></span>Converting <b>' + file.name + '</b> …');
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('review', document.getElementById('review').checked);
-    fd.append('diagrams', document.getElementById('diagrams').checked);
-    fd.append('tables', document.getElementById('tables').checked);
-    fd.append('max_slides', document.getElementById('maxslides').value || 80);
-    try {
-      const res = await fetch('/api/convert', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Conversion failed');
-      showResult(data);
-      setStatus('Done.');
-    } catch (err) {
-      setStatus('⚠ ' + err.message, true);
+  function renderAttachment(session) {
+    if (!session.source || session.source.kind !== 'file') {
+      els.attachmentBar.innerHTML = '';
+      return;
+    }
+
+    const restored = !session.source.file;
+    els.attachmentBar.innerHTML = `
+      <div class="attachment-chip">
+        <span class="badge">Attachment</span>
+        <span class="name">${escapeHtml(session.source.label)}</span>
+        <span>${restored ? 'Restored from this browser session' : 'File attached'}</span>
+        ${restored ? '<button type="button" id="reattach-tip" title="Re-upload to continue editing this chat">Reattach to continue</button>' : ''}
+      </div>
+    `;
+    const reattach = document.getElementById('reattach-tip');
+    if (reattach) {
+      reattach.addEventListener('click', () => {
+        setStatus('Re-upload the same file to continue this chat.', true);
+        switchSourceTab('file');
+      });
     }
   }
 
-  async function convertWithInstructions(source, instructions, targetSlides) {
+  function renderMessages(session) {
+    els.chatLog.innerHTML = '';
+    if (!session.messages.length) {
+      const welcome = document.createElement('div');
+      welcome.className = 'message system';
+      welcome.textContent = session.source
+        ? 'Source attached. Send a message to generate or refine the deck.'
+        : 'Start by attaching a source. New chat always begins blank.';
+      els.chatLog.appendChild(welcome);
+      return;
+    }
+
+    session.messages.forEach(msg => {
+      const bubble = document.createElement('div');
+      bubble.className = 'message ' + msg.role;
+      bubble.textContent = msg.text;
+      els.chatLog.appendChild(bubble);
+    });
+  }
+
+  function renderResult(session) {
+    const result = session.result;
+    if (!result) {
+      revokeUrls();
+      return;
+    }
+
+    const base = result.filename || 'presentation';
+    const htmlUrl = URL.createObjectURL(new Blob([result.html], { type: 'text/html' }));
+    const pptxUrl = URL.createObjectURL(b64ToBlob(result.pptx_base64, result.pptx_media_type));
+    revokeUrls();
+    objectUrls = [htmlUrl, pptxUrl];
+    state.objectUrls = objectUrls;
+
+    const deck = document.createElement('section');
+    deck.className = 'message deck';
+    const notesMetaText = session.notesMetaText || (result.reviewed ? 'This deck was reviewed before it was rendered.' : '');
+    const notesHtml = result.review_notes && result.review_notes.length
+      ? `
+        <div class="notes show">
+          <h5>Review notes</h5>
+          <p>${escapeHtml(notesMetaText || 'Review completed.')}</p>
+          <ul>
+            ${result.review_notes.map(n => `<li>${escapeHtml(n)}</li>`).join('')}
+          </ul>
+        </div>
+      `
+      : (notesMetaText ? `
+        <div class="notes show">
+          <h5>Review notes</h5>
+          <p>${escapeHtml(notesMetaText)}</p>
+        </div>
+      ` : '');
+    deck.innerHTML = `
+      <div class="deck-head">
+        <div class="title">
+          <div>
+            <h4>${escapeHtml(result.title)}</h4>
+            <p class="sub">Deck preview, export buttons, and review notes appear here.</p>
+          </div>
+          <div class="meta-row">
+            <span class="pill"><b>${escapeHtml(String(result.slide_count))}</b> slides</span>
+            <span class="pill"><b>${escapeHtml(String(result.diagram_count))}</b> diagrams</span>
+            <span class="pill" title="${result.ai_enabled ? 'Generated with AI assistance' : 'Generated using the built-in rules'}">Generated with <b>${escapeHtml(result.ai_enabled ? 'AI' : 'smart rules')}</b></span>
+            <span class="pill">${result.reviewed ? 'Reviewed' : (session.notesMetaText ? 'Note applied' : '')}</span>
+          </div>
+        </div>
+        <div class="deck-actions">
+          <a class="btn" href="${pptxUrl}" download="${escapeHtml(base + '.pptx')}">Download .pptx</a>
+          <a class="btn ghost" href="${htmlUrl}" download="${escapeHtml(base + '.html')}">Download .html</a>
+          <a class="btn ghost" href="${htmlUrl}" target="_blank" rel="noreferrer">Open deck ↗</a>
+        </div>
+      </div>
+      ${notesHtml}
+      <div class="preview">
+        <iframe title="Deck preview" srcdoc="${escapeHtml(result.html)}"></iframe>
+      </div>
+    `;
+    els.chatLog.appendChild(deck);
+  }
+
+  function paintChatState(session) {
+    els.composer.placeholder = session.source
+      ? 'Ask for changes. Example: make it 30 slides, keep it formal, and make the flowcharts horizontal.'
+      : 'Attach a source first, then ask for changes.';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[ch]));
+  }
+
+  let objectUrls = [];
+  state.objectUrls = objectUrls;
+  function revokeUrls() {
+    objectUrls.forEach(u => URL.revokeObjectURL(u));
+    objectUrls = [];
+    state.objectUrls = objectUrls;
+  }
+
+  function b64ToBlob(b64, type) {
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type });
+  }
+
+  function currentSource(session) {
+    if (!session || !session.source) return null;
+    if (session.source.kind === 'text') {
+      return { kind: 'text', value: session.source.text, label: session.source.label };
+    }
+    return { kind: 'file', value: session.source.file, label: session.source.label };
+  }
+
+  async function runConversion(session, instructions, targetSlides) {
+    const source = currentSource(session);
+    if (!source) {
+      throw new Error(session.source?.kind === 'file'
+        ? 'This chat needs the original file reattached to continue.'
+        : 'Attach a source first.');
+    }
+
     const fd = new FormData();
-    // Feedback-triggered reruns should regenerate the deck directly, without a
-    // second review pass that can fail on rate limits and add noisy notes.
-    fd.append('review', 'false');
+    fd.append('review', session.result ? 'false' : String(document.getElementById('review').checked));
     fd.append('diagrams', document.getElementById('diagrams').checked);
     fd.append('tables', document.getElementById('tables').checked);
     fd.append('max_slides', document.getElementById('maxslides').value || 80);
     fd.append('instructions', instructions);
-    // Keep the slide count stable while refining, unless an explicit override
-    // (e.g. 0 to restore the original) is passed.
-    const target = targetSlides === undefined ? (lastResult?.slide_count || 0) : targetSlides;
-    fd.append('target_slides', target);
+    fd.append('target_slides', targetSlides === undefined ? (session.result?.slide_count || 0) : targetSlides);
+
     if (source.kind === 'text') {
       fd.append('text', source.value);
       const res = await fetch('/api/convert-text', { method: 'POST', body: fd });
@@ -577,66 +1253,229 @@
     return data;
   }
 
-  let objectUrls = [];
-  function b64ToBlob(b64, type) {
-    const bin = atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-    return new Blob([arr], { type });
+  function attachTextSource(session, text) {
+    session.source = {
+      kind: 'text',
+      label: 'Pasted text',
+      text,
+      file: null,
+    };
+    session.title = 'Pasted text';
+    session.messages = [];
+    session.chatTurns = [];
+    session.result = null;
+    session.notesMetaText = '';
+    addSystem(session, 'Source attached. Generating the initial deck...');
   }
 
-  function showResult(d, notesMetaText = '') {
-    objectUrls.forEach(u => URL.revokeObjectURL(u));
-    objectUrls = [];
-    lastResult = d;
-
-    document.getElementById('r-title').textContent = d.title;
-    document.getElementById('r-slides').textContent = d.slide_count;
-    document.getElementById('r-diagrams').textContent = d.diagram_count;
-    document.getElementById('r-engine').textContent = d.ai_enabled ? 'AI' : 'smart rules';
-    document.getElementById('r-reviewed').textContent = d.reviewed
-      ? 'Reviewed'
-      : (notesMetaText ? 'Note applied' : '');
-
-    document.getElementById('r-engine-wrap').title = d.ai_enabled
-      ? 'Generated with AI assistance'
-      : 'Generated using the built-in rules';
-
-    const base = d.filename || 'presentation';
-    const htmlUrl = URL.createObjectURL(new Blob([d.html], { type: 'text/html' }));
-    const pptxUrl = URL.createObjectURL(b64ToBlob(d.pptx_base64, d.pptx_media_type));
-    objectUrls.push(htmlUrl, pptxUrl);
-
-    const dlPptx = document.getElementById('dl-pptx');
-    dlPptx.href = pptxUrl; dlPptx.download = base + '.pptx';
-    const dlHtml = document.getElementById('dl-html');
-    dlHtml.href = htmlUrl; dlHtml.download = base + '.html';
-    document.getElementById('open-html').href = htmlUrl;
-
-    const preview = document.getElementById('preview');
-    preview.removeAttribute('src');
-    preview.srcdoc = d.html;
-
-    const notes = document.getElementById('notes');
-    const notesMeta = document.getElementById('notes-meta');
-    const list = document.getElementById('notes-list');
-    list.innerHTML = '';
-    notesMeta.textContent = notesMetaText
-      || (d.reviewed ? 'This deck was reviewed before it was rendered.' : '');
-    if (d.review_notes && d.review_notes.length) {
-      d.review_notes.forEach(n => {
-        const li = document.createElement('li');
-        li.textContent = n;
-        list.appendChild(li);
-      });
-      notes.classList.add('show');
-    } else if (notesMeta.textContent) {
-      notes.classList.add('show');
-    } else {
-      notes.classList.remove('show');
+  async function startTextChat() {
+    const session = getActiveSession();
+    const text = els.sourceText.value.trim();
+    if (!text) {
+      setStatus('Paste some text first.', true);
+      return;
     }
-    result.classList.add('show');
+    attachTextSource(session, text);
+    renderAll();
+    await generateInitialDeck();
   }
+
+  async function handleFile(file) {
+    const session = getActiveSession();
+    session.source = {
+      kind: 'file',
+      label: file.name,
+      file,
+      restored: false,
+    };
+    session.title = file.name.replace(/\.[^.]+$/, '') || 'Uploaded file';
+    session.messages = [];
+    session.chatTurns = [];
+    session.result = null;
+    session.notesMetaText = '';
+    addSystem(session, `File attached: ${file.name}. Generating the initial deck...`);
+    renderAll();
+    await generateInitialDeck();
+  }
+
+  async function generateInitialDeck() {
+    const session = getActiveSession();
+    if (!session.source) return;
+    session.pending = true;
+    setStatus('<span class="spinner"></span>Generating the initial deck...');
+    try {
+      const data = await runConversion(session, '', 0);
+      session.result = data;
+      session.messages = [...session.messages, { role: 'assistant', text: `Deck ready: ${data.slide_count} slides, ${data.diagram_count} diagram(s).` }];
+      setStatus('Done.');
+      renderAll();
+    } catch (e) {
+      session.messages = [...session.messages, { role: 'assistant', text: `Generation failed: ${e.message}` }];
+      setStatus(e.message, true);
+      renderAll();
+    } finally {
+      session.pending = false;
+    }
+  }
+
+  async function sendChat() {
+    const session = getActiveSession();
+    const comment = document.getElementById('fb-comment').value.trim();
+    if (!comment) {
+      setStatus('Type a change first.', true);
+      return;
+    }
+    if (!session.source) {
+      setStatus('Attach a source first.', true);
+      return;
+    }
+
+    session.messages = [...session.messages, { role: 'user', text: comment }];
+    session.chatTurns = [...session.chatTurns, comment];
+    setSessionTitleFromMessage(session, comment);
+    document.getElementById('fb-comment').value = '';
+    setStatus('<span class="spinner"></span>Applying your changes...');
+    renderAll();
+    try {
+      const data = await runConversion(session, session.chatTurns.join('. '));
+      session.result = data;
+      session.notesMetaText = 'Applied through chat.';
+      session.messages = [...session.messages, { role: 'assistant', text: `Updated: ${data.slide_count} slides, ${data.diagram_count} diagram(s).` }];
+      setStatus('Done.');
+      renderAll();
+    } catch (e) {
+      session.chatTurns = session.chatTurns.slice(0, -1);
+      session.messages = [...session.messages, { role: 'assistant', text: `Update failed: ${e.message}` }];
+      setStatus(e.message, true);
+      renderAll();
+    }
+  }
+
+  function setStatus(message, isErr) {
+    els.status.textContent = '';
+    els.status.className = 'status' + (isErr ? ' err' : '');
+    els.status.innerHTML = message;
+  }
+
+  function resetCurrentChat() {
+    const session = getActiveSession();
+    if (!session) return;
+    session.chatTurns = [];
+    session.messages = [];
+    session.result = null;
+    session.notesMetaText = '';
+    if (session.source?.kind === 'text') {
+      session.title = session.source.label;
+    } else if (session.source?.kind === 'file') {
+      session.title = session.source.label.replace(/\.[^.]+$/, '') || session.source.label;
+    } else {
+      session.title = 'New chat';
+    }
+    renderAll();
+    setStatus('Chat reset.');
+  }
+
+  function switchSourceTab(which) {
+    const session = getActiveSession();
+    session.sourceTab = which;
+    renderAll();
+  }
+
+  function init() {
+    loadState();
+
+    fetch('/api/health').then(r => r.json()).then(h => {
+      document.getElementById('aimode').textContent =
+        h.ai_enabled ? `AI engine: ${h.model}` : 'heuristic engine';
+    }).catch(() => {});
+
+    document.getElementById('new-chat').addEventListener('click', () => {
+      newSession();
+      renderAll();
+      els.sourceText.value = '';
+      document.getElementById('file').value = '';
+      setStatus('Fresh chat started.');
+    });
+
+    document.getElementById('chat-reset-top').addEventListener('click', resetCurrentChat);
+    document.getElementById('chat-reset').addEventListener('click', resetCurrentChat);
+    document.getElementById('fb-apply').addEventListener('click', sendChat);
+    document.getElementById('attach-text').addEventListener('click', () => {
+      switchSourceTab('text');
+      queueMicrotask(() => els.sourceText.focus());
+    });
+    document.getElementById('attach-file').addEventListener('click', () => {
+      switchSourceTab('file');
+      queueMicrotask(() => document.getElementById('file').click());
+    });
+    document.getElementById('fb-comment').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+    document.getElementById('source-clear').addEventListener('click', () => {
+      const session = getActiveSession();
+      session.source = null;
+      session.sourceTab = 'text';
+      renderAll();
+      setStatus('Source removed.');
+    });
+
+    document.getElementById('fb-send').addEventListener('click', async () => {
+      const comment = document.getElementById('fb-comment').value.trim();
+      const msg = document.getElementById('fb-msg');
+      const fd = new FormData();
+      const rating = Number(window.__fbRating || 0);
+      if (!rating && !comment) { msg.style.color = 'var(--bad)'; msg.textContent = 'Pick a star rating first.'; return; }
+      fd.append('rating', rating);
+      fd.append('comment', comment);
+      fd.append('context', navigator.userAgent.slice(0, 120));
+      try {
+        const res = await fetch('/api/feedback', { method: 'POST', body: fd });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail || 'Failed');
+        msg.style.color = 'var(--good)';
+        msg.textContent = d.message || 'Thanks!';
+        window.__fbRating = 0;
+        paintStars(0);
+      } catch (e) {
+        msg.style.color = 'var(--bad)';
+        msg.textContent = e.message;
+      }
+    });
+
+    // Rating widget.
+    window.__fbRating = 0;
+    const starEls = document.querySelectorAll('#stars span');
+    function paintStars(n) {
+      starEls.forEach(s => { s.textContent = Number(s.dataset.v) <= n ? '★' : '☆'; });
+    }
+    starEls.forEach(s => s.addEventListener('click', () => {
+      window.__fbRating = Number(s.dataset.v);
+      paintStars(window.__fbRating);
+    }));
+
+    document.getElementById('source-tab-text').addEventListener('click', () => switchSourceTab('text'));
+    document.getElementById('source-tab-file').addEventListener('click', () => switchSourceTab('file'));
+    document.getElementById('start-text').addEventListener('click', startTextChat);
+    document.getElementById('file').addEventListener('change', () => {
+      const file = document.getElementById('file').files[0];
+      if (file) handleFile(file);
+    });
+    ['dragenter', 'dragover'].forEach(ev =>
+      document.getElementById('drop').addEventListener(ev, e => { e.preventDefault(); document.getElementById('drop').classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach(ev =>
+      document.getElementById('drop').addEventListener(ev, e => { e.preventDefault(); document.getElementById('drop').classList.remove('drag'); }));
+    document.getElementById('drop').addEventListener('drop', e => {
+      const f = e.dataTransfer.files?.[0];
+      if (f) handleFile(f);
+    });
+
+    renderAll();
+  }
+
+  init();
 </script>
 </body>
 </html>
