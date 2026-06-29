@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import types
 import unittest
+from itertools import count
 from pathlib import Path
 from unittest.mock import patch
 
@@ -416,6 +417,62 @@ class FeedbackInstructionTests(unittest.TestCase):
             )
 
         self.assertEqual(result.deck.slides[0].diagram.direction, "right")
+
+    def test_review_retries_on_quota_errors_before_skipping(self) -> None:
+        settings = Settings(
+            groq_api_key="test-key",
+            groq_model="test-model",
+            groq_fallback_model=None,
+            gemini_api_key=None,
+            gemini_model="test-gemini",
+            max_upload_bytes=1024,
+            groq_max_tokens=128,
+            groq_source_chars=256,
+            feedback_webhook_url=None,
+        )
+        blocks = [Block(kind="text", level=0, text="Body")]
+        deck = Deck(title="Deck", subtitle="Source", slides=[Slide(title="Intro", bullets=["One", "Two", "Three"])])
+        payload = {
+            "notes": ["kept content"],
+            "deck": {
+                "title": deck.title,
+                "subtitle": deck.subtitle,
+                "slides": [
+                    {
+                        "title": "Intro",
+                        "bullets": ["One", "Two", "Three"],
+                        "diagram": None,
+                        "table": None,
+                        "notes": "",
+                    }
+                ],
+            },
+        }
+        calls = count()
+
+        def groq_json_stub(*_args, **_kwargs):
+            if next(calls) < 2:
+                raise RuntimeError("429 rate_limit_exceeded")
+            return payload
+
+        with (
+            patch("app.pipeline.parse_source", return_value=blocks),
+            patch("app.pipeline.plan_deck", return_value=(deck, "heuristic")),
+            patch("app.pipeline.strip_diagrams", return_value=deck),
+            patch("app.reviewer.groq_json", groq_json_stub),
+            patch("app.reviewer.time.sleep") as sleep_mock,
+            patch("app.pipeline.render_pptx", return_value=b"pptx"),
+            patch("app.pipeline.render_html", return_value="<html />"),
+        ):
+            result = convert(
+                Path("/tmp/tmpabc123.md"),
+                settings,
+                review=True,
+                diagrams=False,
+            )
+
+        self.assertEqual(result.review_notes, ("kept content",))
+        self.assertGreaterEqual(sleep_mock.call_count, 2)
 
     def test_pipeline_can_disable_tables(self) -> None:
         settings = Settings(
