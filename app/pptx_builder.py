@@ -88,21 +88,27 @@ def _add_bullets(slide, slide_data: Slide, prs: Presentation, theme: Theme) -> N
         p.space_after = Pt(10)
 
 
-def _add_diagram(slide, diagram: Diagram, prs: Presentation, theme: Theme) -> None:
+def _add_diagram(
+    slide,
+    diagram: Diagram,
+    prs: Presentation,
+    theme: Theme,
+    roomy: bool = False,
+) -> None:
     width, height = _slide_size(prs)
     steps = diagram.steps
     if not steps:
         return
 
-    top_margin = int(height * 0.28)
-    area_w = int(width * 0.84)
-    left_margin = int(width * 0.08)
+    top_margin = int(height * (0.20 if roomy else 0.28))
+    area_w = int(width * (0.90 if roomy else 0.84))
+    left_margin = int(width * (0.05 if roomy else 0.08))
 
     if diagram.direction == "right":
-        gap = int(area_w * 0.04)
+        gap = int(area_w * (0.03 if roomy else 0.04))
         node_w = (area_w - gap * (len(steps) - 1)) // len(steps)
-        node_h = int(height * 0.16)
-        top = top_margin + int(height * 0.12)
+        node_h = int(height * (0.20 if roomy else 0.16))
+        top = top_margin + int(height * (0.08 if roomy else 0.12))
         boxes = []
         for i, label in enumerate(steps):
             left = left_margin + i * (node_w + gap)
@@ -110,12 +116,12 @@ def _add_diagram(slide, diagram: Diagram, prs: Presentation, theme: Theme) -> No
         for a, b in zip(boxes, boxes[1:]):
             _connect(slide, a, b, theme)
     else:  # "down"
-        node_w = int(area_w * 0.5)
+        node_w = int(area_w * (0.68 if roomy else 0.5))
         left = left_margin + (area_w - node_w) // 2
-        available = int(height * 0.62)
-        gap = int(available * 0.05)
+        available = int(height * (0.72 if roomy else 0.62))
+        gap = int(available * (0.04 if roomy else 0.05))
         node_h = (available - gap * (len(steps) - 1)) // len(steps)
-        node_h = min(node_h, int(height * 0.13))
+        node_h = min(node_h, int(height * (0.16 if roomy else 0.13)))
         boxes = []
         for i, label in enumerate(steps):
             top = top_margin + i * (node_h + gap)
@@ -136,7 +142,7 @@ def _node(slide, label: str, left: int, top: int, w: int, h: int, theme: Theme):
     p = tf.paragraphs[0]
     p.text = label
     p.alignment = PP_ALIGN.CENTER
-    p.font.size = Pt(15)
+    p.font.size = Pt(16)
     p.font.bold = True
     p.font.color.rgb = _rgb(theme.node_text)
     return shape
@@ -244,10 +250,11 @@ def _add_content_slide(prs: Presentation, slide_data: Slide, theme: Theme) -> No
     tp.font.bold = True
     tp.font.color.rgb = _rgb(theme.heading_text)
 
+    is_diagram_only = bool(slide_data.diagram and not slide_data.bullets and not slide_data.table)
     if slide_data.bullets:
         _add_bullets(slide, slide_data, prs, theme)
     if slide_data.diagram:
-        _add_diagram(slide, slide_data.diagram, prs, theme)
+        _add_diagram(slide, slide_data.diagram, prs, theme, roomy=is_diagram_only)
     if slide_data.table:
         _add_table(slide, slide_data.table, prs, theme)
 

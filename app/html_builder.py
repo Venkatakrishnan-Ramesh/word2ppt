@@ -40,6 +40,12 @@ _TEMPLATE = """<!DOCTYPE html>
   .reveal ul {{ display: block; }}
   .reveal li {{ margin: .35em 0; }}
   .reveal .mermaid {{ display: flex; justify-content: center; }}
+  .reveal .mermaid svg {{
+    width: 100% !important;
+    max-width: 100%;
+    height: auto !important;
+    max-height: 72vh;
+  }}
   .reveal table {{ font-size: .5em; border-collapse: collapse; width: 100%; }}
   .reveal table th, .reveal table td {{
     border: 1px solid var(--table-border); padding: .25em .45em;
