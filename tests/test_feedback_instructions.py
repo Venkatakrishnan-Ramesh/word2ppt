@@ -447,6 +447,20 @@ class FeedbackInstructionTests(unittest.TestCase):
 
         self.assertIn('class="diagram-slide"', rendered)
 
+    def test_html_forces_diagram_svg_to_fill_preview_height(self) -> None:
+        from app.html_builder import render_html
+
+        deck = Deck(
+            title="Deck",
+            subtitle="Source",
+            slides=[Slide(title="Workflow", diagram=Diagram(direction="right", steps=["Start", "Finish"]))],
+        )
+
+        rendered = render_html(deck)
+
+        self.assertIn("height: 78vh !important;", rendered)
+        self.assertIn("min-height: 78vh;", rendered)
+
     def test_reviewer_prompt_corrects_layout_when_possible(self) -> None:
         settings = Settings(
             groq_api_key="test-key",

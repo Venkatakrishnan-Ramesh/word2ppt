@@ -41,14 +41,20 @@ _TEMPLATE = """<!DOCTYPE html>
   .reveal li {{ margin: .35em 0; }}
   .reveal .mermaid {{ display: flex; justify-content: center; }}
   .reveal .mermaid svg {{
-    width: 100% !important;
-    max-width: 100%;
-    height: auto !important;
-    max-height: 78vh;
+    width: min(100%, 96vw) !important;
+    max-width: 96vw;
+    height: 78vh !important;
+    max-height: none;
   }}
   .reveal section.diagram-slide .mermaid {{
-    min-height: 68vh;
+    min-height: 78vh;
     align-items: center;
+    width: 100%;
+  }}
+  .reveal section.diagram-slide {{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
   }}
   .reveal table {{ font-size: .5em; border-collapse: collapse; width: 100%; }}
   .reveal table th, .reveal table td {{
