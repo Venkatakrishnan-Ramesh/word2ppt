@@ -108,6 +108,16 @@
     overflow: auto;
     flex: 1;
   }
+  .chat-search {
+    width: calc(100% - 28px);
+    margin: 0 14px 10px;
+    padding: .72rem .8rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+  }
   .chat-item {
     width: 100%;
     border: 1px solid transparent;
@@ -124,17 +134,39 @@
     background: #eef4ff;
     border-color: #d3e0ff;
   }
+  .chat-item .title-row {
+    display: flex;
+    gap: 8px;
+    align-items: start;
+    justify-content: space-between;
+  }
   .chat-item .title {
     display: block;
     color: var(--text);
     font-weight: 700;
     font-size: .9rem;
     margin-bottom: 4px;
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    text-align: left;
   }
   .chat-item .meta {
     color: var(--muted);
     font-size: .76rem;
     line-height: 1.35;
+  }
+  .chat-item .actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .chat-item .actions .btn {
+    padding: .38rem .55rem;
+    font-size: .74rem;
+    border-radius: 10px;
   }
   .sidebar-footer {
     padding: 14px 16px 16px;
@@ -175,6 +207,9 @@
     gap: 8px;
     flex-wrap: wrap;
     justify-content: flex-end;
+  }
+  .sidebar-toggle {
+    display: none;
   }
   .pill {
     display: inline-flex;
@@ -290,6 +325,24 @@
   .instruction-list span {
     color: var(--muted);
   }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .chip {
+    border: 1px solid #d8e4ff;
+    background: #eef4ff;
+    color: var(--accent);
+    border-radius: 999px;
+    padding: .44rem .72rem;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .chip:hover { filter: brightness(0.98); }
 
   .chat-shell {
     min-height: 0;
@@ -374,6 +427,7 @@
     padding-top: 12px;
     border-top: 1px solid var(--line);
   }
+  .attach-shell[hidden] { display: none !important; }
   .source-editor {
     margin-top: 12px;
     display: grid;
@@ -474,6 +528,12 @@
     transition: transform .18s var(--ease), filter .18s var(--ease);
   }
   .btn:hover { transform: translateY(-1px); filter: brightness(1.02); }
+  .btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
+  }
   .btn.ghost {
     color: var(--text);
     background: #fff;
@@ -645,7 +705,79 @@
     flex-wrap: wrap;
     align-items: center;
   }
-  .attach-shell[hidden] { display: none !important; }
+  .composer-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+  }
+  .composer-field {
+    display: grid;
+    gap: 8px;
+  }
+  .composer-field textarea {
+    min-height: 120px;
+  }
+  .summary-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .summary-bar .left {
+    display: grid;
+    gap: 4px;
+  }
+  .summary-bar h4 {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .summary-bar p {
+    margin: 0;
+    color: var(--muted);
+    font-size: .82rem;
+  }
+  .result-toggle {
+    margin-top: 10px;
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+  }
+  .quick-actions {
+    position: fixed;
+    inset: 72px auto auto 50%;
+    transform: translateX(-50%);
+    width: min(92vw, 420px);
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(255,255,255,.96);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+    z-index: 20;
+  }
+  .quick-actions[hidden] { display: none; }
+  .quick-actions .title {
+    margin: 0 0 10px;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--muted);
+    font-weight: 800;
+  }
+  .quick-actions .grid {
+    display: grid;
+    gap: 8px;
+  }
+  .quick-actions .grid .btn {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .quick-actions .hint {
+    margin-top: 8px;
+    font-size: .74rem;
+  }
   .footer {
     padding: 0 18px 2px;
     color: var(--muted);
@@ -666,7 +798,16 @@
 
   @media (max-width: 1100px) {
     .app { grid-template-columns: 1fr; }
-    .sidebar { min-height: 0; }
+    .sidebar {
+      min-height: 0;
+      display: none;
+    }
+    body.sidebar-open .sidebar {
+      display: flex;
+    }
+    .sidebar-toggle {
+      display: inline-flex;
+    }
   }
   @media (max-width: 760px) {
     .app { width: min(100vw - 12px, 1440px); }
@@ -676,10 +817,22 @@
     .composer { padding: 14px; }
     iframe { height: 500px; }
     .message { max-width: 100%; }
+    .summary-bar { align-items: stretch; }
+    .summary-bar .action-row { width: 100%; justify-content: flex-start; }
   }
 </style>
 </head>
 <body>
+  <div class="quick-actions" id="quick-actions" hidden>
+    <div class="title">Quick actions</div>
+    <div class="grid">
+      <button class="btn ghost" type="button" data-action="new">New chat</button>
+      <button class="btn ghost" type="button" data-action="rename">Rename current</button>
+      <button class="btn ghost" type="button" data-action="duplicate">Duplicate current</button>
+      <button class="btn ghost" type="button" data-action="delete">Delete current</button>
+    </div>
+    <div class="hint">Cmd/Ctrl+K opens this menu. Esc closes it.</div>
+  </div>
   <div class="app">
     <aside class="card sidebar">
       <div class="sidebar-top">
@@ -695,6 +848,7 @@
       <div class="sidebar-section">
         <div class="sidebar-label">Chats</div>
       </div>
+      <input class="chat-search" id="chat-search" type="search" placeholder="Search chats" />
       <div class="chat-list" id="chat-list"></div>
       <div class="sidebar-footer">
         Fresh chat sessions keep their own instructions and deck state. File uploads live in the current browser session.
@@ -704,10 +858,20 @@
     <main class="workspace">
       <header class="card topbar">
         <div>
-          <h2 id="chat-title">New chat</h2>
-          <p class="sub" id="chat-sub">
-            Start with a source, then refine it with follow-up messages. Use New chat to reset everything.
-          </p>
+          <div class="summary-bar">
+            <div class="left">
+              <h2 id="chat-title" title="Rename this chat">New chat</h2>
+              <p class="sub" id="chat-sub">
+                Start with a source, then refine it with follow-up messages. Use New chat to reset everything.
+              </p>
+            </div>
+            <div class="action-row">
+              <button class="btn ghost sidebar-toggle" id="sidebar-toggle" type="button">Chats</button>
+              <button class="btn ghost" id="rename-chat" type="button">Rename</button>
+              <button class="btn ghost" id="duplicate-chat" type="button">Duplicate</button>
+              <button class="btn ghost" id="delete-chat" type="button">Delete</button>
+            </div>
+          </div>
         </div>
         <div class="top-pills">
           <span class="pill"><b id="aimode">checking engine…</b></span>
@@ -761,16 +925,19 @@
         <section class="card composer">
           <div class="composer-top">
             <div class="composer-actions">
-              <button class="btn ghost" id="attach-text" type="button">Paste source</button>
+              <button class="btn ghost" id="attach-source" type="button">Attach source</button>
               <button class="btn ghost" id="chat-reset" type="button">Reset chat</button>
             </div>
-            <button class="btn" id="fb-apply" type="button">Send</button>
+            <div class="action-row" style="justify-content:flex-end; align-items:center;">
+              <span class="helper" id="send-hint">Attach a source first.</span>
+              <button class="btn" id="fb-apply" type="button">Send</button>
+            </div>
           </div>
           <section class="attach-shell" id="attach-shell">
             <div class="heading">
               <div>
                 <h3>Source</h3>
-                <p class="sub">Paste text or upload a file, then the deck appears below in the chat stream.</p>
+                <p class="sub">Paste text or attach a file, then the deck appears below in the chat stream.</p>
               </div>
               <div class="action-row">
                 <span class="pill"><b id="source-mode">Text</b></span>
@@ -806,6 +973,12 @@
             </div>
           </section>
           <textarea id="fb-comment" placeholder="Ask for changes. Example: make it 30 slides, then make the flowcharts horizontal."></textarea>
+          <div class="chips" id="refine-chips">
+            <button class="chip" type="button" data-insert="make it 23 slides">23 slides</button>
+            <button class="chip" type="button" data-insert="make the flowcharts horizontal">Flowcharts horizontal</button>
+            <button class="chip" type="button" data-insert="keep it formal and official">Formal tone</button>
+            <button class="chip" type="button" data-insert="use the tamil nadu highways theme">Tamil Nadu theme</button>
+          </div>
           <div class="composer-top" style="margin-top:10px;">
             <div class="status" id="fb-msg"></div>
             <div class="action-row" style="justify-content:flex-end;">
@@ -830,6 +1003,8 @@
   const state = {
     sessions: [],
     activeId: null,
+    chatSearch: '',
+    quickActionsOpen: false,
   };
 
   const els = {
@@ -837,6 +1012,10 @@
     chatTitle: document.getElementById('chat-title'),
     chatSub: document.getElementById('chat-sub'),
     sessionCount: document.getElementById('session-count'),
+    chatSearch: document.getElementById('chat-search'),
+    renameChat: document.getElementById('rename-chat'),
+    duplicateChat: document.getElementById('duplicate-chat'),
+    deleteChat: document.getElementById('delete-chat'),
     sourceStatus: document.getElementById('source-status'),
     sourceText: document.getElementById('source-text'),
     sourceEditor: document.getElementById('source-editor'),
@@ -848,6 +1027,10 @@
     chatLog: document.getElementById('chat-log'),
     status: document.getElementById('fb-msg'),
     composer: document.getElementById('fb-comment'),
+    sendHint: document.getElementById('send-hint'),
+    sourceShell: document.getElementById('attach-shell'),
+    quickActions: document.getElementById('quick-actions'),
+    sidebarToggle: document.getElementById('sidebar-toggle'),
   };
 
   function uid() {
@@ -858,6 +1041,32 @@
     try { return JSON.parse(raw); } catch { return null; }
   }
 
+  const SUPPORTED_FILE_EXTS = ['.doc', '.docx', '.pdf', '.txt', '.md', '.rtf', '.html', '.htm'];
+  const SOFT_FILE_LIMIT_BYTES = 25 * 1024 * 1024;
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    const units = ['KB', 'MB', 'GB'];
+    let value = bytes / 1024;
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+      value /= 1024;
+      unit += 1;
+    }
+    return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`;
+  }
+
+  function validateFile(file) {
+    const name = String(file?.name || '');
+    const ext = name.slice(name.lastIndexOf('.')).toLowerCase();
+    if (!name) return 'Choose a file first.';
+    if (!SUPPORTED_FILE_EXTS.includes(ext)) {
+      return `Unsupported file type "${ext || '(none)'}". Use: ${SUPPORTED_FILE_EXTS.join(', ')}.`;
+    }
+    return '';
+  }
+
   function serializeSession(session) {
     return {
       id: session.id,
@@ -866,12 +1075,16 @@
         kind: session.source.kind,
         label: session.source.label,
         text: session.source.kind === 'text' ? session.source.text : undefined,
+        size: session.source.size,
+        type: session.source.type,
         restored: session.source.kind === 'file' ? !session.source.file : false,
       } : null,
       messages: session.messages,
       chatTurns: session.chatTurns,
       notesMetaText: session.notesMetaText,
       sourceTab: session.sourceTab,
+      sourceOpen: session.sourceOpen,
+      previewOpen: session.previewOpen,
       result: session.result,
     };
   }
@@ -883,6 +1096,8 @@
       label: raw.source.label || 'Source',
       text: raw.source.kind === 'text' ? String(raw.source.text || '') : undefined,
       file: null,
+      size: Number(raw.source.size || 0),
+      type: String(raw.source.type || ''),
       restored: Boolean(raw.source.restored),
     } : null;
     return {
@@ -894,6 +1109,8 @@
       result: raw.result && typeof raw.result === 'object' ? raw.result : null,
       notesMetaText: String(raw.notesMetaText || ''),
       sourceTab: raw.sourceTab === 'file' ? 'file' : 'text',
+      sourceOpen: Boolean(raw.sourceOpen),
+      previewOpen: Boolean(raw.previewOpen),
       pending: false,
     };
   }
@@ -938,6 +1155,8 @@
       result: null,
       notesMetaText: '',
       sourceTab: 'text',
+      sourceOpen: false,
+      previewOpen: false,
       pending: false,
     };
     state.sessions = prepend ? [session, ...state.sessions] : [...state.sessions, session];
@@ -957,13 +1176,81 @@
 
   function setActive(id) {
     state.activeId = id;
+    if (document.body.classList.contains('sidebar-open')) {
+      document.body.classList.remove('sidebar-open');
+    }
+    renderAll();
+  }
+
+  function removeSession(id) {
+    if (state.sessions.length <= 1) {
+      state.sessions = [{
+        id: uid(),
+        title: 'New chat',
+        source: null,
+        messages: [],
+        chatTurns: [],
+        result: null,
+        notesMetaText: '',
+        sourceTab: 'text',
+        sourceOpen: false,
+        previewOpen: false,
+        pending: false,
+      }];
+      state.activeId = state.sessions[0].id;
+      renderAll();
+      return;
+    }
+    const idx = state.sessions.findIndex(s => s.id === id);
+    if (idx < 0) return;
+    const next = state.sessions[idx + 1] || state.sessions[idx - 1];
+    state.sessions = state.sessions.filter(s => s.id !== id);
+    state.activeId = next ? next.id : state.sessions[0].id;
+    renderAll();
+  }
+
+  function duplicateSession(id) {
+    const src = state.sessions.find(s => s.id === id);
+    if (!src) return;
+    const copy = {
+      id: uid(),
+      title: src.title === 'New chat' ? 'Copy of chat' : `Copy of ${src.title}`,
+      source: src.source ? {
+        kind: src.source.kind,
+        label: src.source.label,
+        text: src.source.kind === 'text' ? src.source.text : undefined,
+        file: src.source.kind === 'file' ? src.source.file : null,
+        size: src.source.size,
+        type: src.source.type,
+        restored: src.source.kind === 'file' ? !src.source.file : false,
+      } : null,
+      messages: src.messages.map(m => ({ ...m })),
+      chatTurns: [...src.chatTurns],
+      result: src.result ? { ...src.result } : null,
+      notesMetaText: src.notesMetaText,
+      sourceTab: src.sourceTab,
+      sourceOpen: src.sourceOpen,
+      pending: false,
+    };
+    state.sessions = [copy, ...state.sessions];
+    state.activeId = copy.id;
+    renderAll();
+  }
+
+  function renameSession(id) {
+    const session = state.sessions.find(s => s.id === id);
+    if (!session) return;
+    const next = window.prompt('Rename this chat', session.title === 'New chat' ? '' : session.title);
+    if (next === null) return;
+    const title = next.trim();
+    session.title = title || 'New chat';
     renderAll();
   }
 
   function activeTitle(session) {
     if (!session) return 'New chat';
-    if (session.source?.label) return session.source.label;
     if (session.title && session.title !== 'New chat') return session.title;
+    if (session.source?.label) return session.source.label;
     return 'New chat';
   }
 
@@ -984,8 +1271,10 @@
   function renderAll() {
     ensureSession();
     const session = getActiveSession();
+    const stickToBottom = isNearBottom(els.chatLog);
     els.sessionCount.textContent = state.sessions.length;
     els.chatTitle.textContent = activeTitle(session);
+    els.chatTitle.title = `Rename "${activeTitle(session)}"`;
     els.chatSub.textContent = session.source
       ? `Source attached: ${session.source.label}. Keep chatting to refine the deck or start a new chat for a fresh start.`
       : 'Attach a source, generate the initial deck, then keep refining in the same thread.';
@@ -995,26 +1284,61 @@
     renderMessages(session);
     renderResult(session);
     paintChatState(session);
-    els.chatLog.scrollTop = els.chatLog.scrollHeight;
+    els.quickActions.hidden = !state.quickActionsOpen;
+    if (els.sidebarToggle) {
+      els.sidebarToggle.textContent = document.body.classList.contains('sidebar-open') ? 'Close chats' : 'Chats';
+    }
+    if (stickToBottom) {
+      els.chatLog.scrollTop = els.chatLog.scrollHeight;
+    }
     saveState();
   }
 
   function renderSidebar() {
     els.chatList.innerHTML = '';
-    state.sessions.forEach(session => {
-      const btn = document.createElement('button');
-      btn.className = 'chat-item' + (session.id === state.activeId ? ' active' : '');
-      btn.type = 'button';
-      btn.innerHTML = `
-        <span class="title">${escapeHtml(activeTitle(session))}</span>
-        <span class="meta">${session.source ? escapeHtml(session.source.label) : 'No source yet'} · ${session.messages.length} message${session.messages.length === 1 ? '' : 's'}</span>
+    const q = state.chatSearch.trim().toLowerCase();
+    const sessions = q
+      ? state.sessions.filter(session => {
+          const hay = [
+            session.title,
+            session.source?.label,
+            session.messages.map(m => m.text).join(' '),
+          ].join(' ').toLowerCase();
+          return hay.includes(q);
+        })
+      : state.sessions;
+
+    sessions.forEach(session => {
+      const row = document.createElement('div');
+      row.className = 'chat-item' + (session.id === state.activeId ? ' active' : '');
+      row.innerHTML = `
+        <button class="title" type="button" data-open="${session.id}">${escapeHtml(activeTitle(session))}</button>
+        <div class="meta">${session.source ? escapeHtml(session.source.label) : 'No source yet'} · ${session.messages.length} message${session.messages.length === 1 ? '' : 's'}</div>
+        <div class="actions">
+          <button class="btn ghost" type="button" data-rename="${session.id}">Rename</button>
+          <button class="btn ghost" type="button" data-dup="${session.id}">Copy</button>
+          <button class="btn ghost" type="button" data-del="${session.id}">Delete</button>
+        </div>
       `;
-      btn.addEventListener('click', () => setActive(session.id));
-      els.chatList.appendChild(btn);
+      row.querySelector('[data-open]')?.addEventListener('click', () => setActive(session.id));
+      row.querySelector('[data-rename]')?.addEventListener('click', () => renameSession(session.id));
+      row.querySelector('[data-dup]')?.addEventListener('click', () => duplicateSession(session.id));
+      row.querySelector('[data-del]')?.addEventListener('click', () => removeSession(session.id));
+      els.chatList.appendChild(row);
     });
+
+    if (!sessions.length) {
+      const empty = document.createElement('div');
+      empty.className = 'message system';
+      empty.textContent = 'No chats match this search.';
+      els.chatList.appendChild(empty);
+    }
   }
 
   function renderSource(session) {
+    const open = Boolean(session.sourceOpen || !session.source);
+    els.sourceShell.hidden = !open && Boolean(session.source);
+
     if (!session.source) {
       els.sourceStatus.innerHTML = '<span class="pill">No source attached</span>';
       els.sourceEditor.style.display = 'grid';
@@ -1031,9 +1355,17 @@
     const restoredNote = session.source.kind === 'file' && !session.source.file
       ? '<span class="pill">Restored preview only</span>'
       : '';
+    const sizeNote = session.source.kind === 'file'
+      ? `<span class="pill">${escapeHtml(formatBytes(session.source.size || 0) || 'Unknown size')}</span>`
+      : '';
+    const largeNote = session.source.kind === 'file' && session.source.size > SOFT_FILE_LIMIT_BYTES
+      ? '<span class="pill">Large file</span>'
+      : '';
     els.sourceStatus.innerHTML = `
       <span class="pill"><b>Source</b>: ${escapeHtml(session.source.label)}</span>
       <span class="pill">${session.source.kind === 'file' ? 'File' : 'Text'}</span>
+      ${sizeNote}
+      ${largeNote}
       ${restoredNote}
       <button class="btn ghost" id="replace-source" type="button">Replace</button>
       <button class="btn ghost" id="clear-source" type="button">Remove</button>
@@ -1041,18 +1373,20 @@
     els.sourceText.value = session.source.kind === 'text' ? session.source.text : '';
     document.getElementById('file').value = '';
     document.getElementById('source-mode').textContent = session.source.kind === 'file' ? 'File' : 'Text';
-    els.sourceEditor.style.display = 'grid';
+    els.sourceEditor.style.display = open ? 'grid' : 'none';
     queueMicrotask(() => {
       const replace = document.getElementById('replace-source');
       const clear = document.getElementById('clear-source');
       if (replace) replace.addEventListener('click', () => {
         session.source = null;
         session.sourceTab = 'text';
+        session.sourceOpen = true;
         renderAll();
       });
       if (clear) clear.addEventListener('click', () => {
         session.source = null;
         session.sourceTab = 'text';
+        session.sourceOpen = true;
         renderAll();
       });
     });
@@ -1065,10 +1399,13 @@
     }
 
     const restored = !session.source.file;
+    const sizeLabel = session.source.size ? formatBytes(session.source.size) : 'unknown size';
+    const typeLabel = session.source.type || 'file';
     els.attachmentBar.innerHTML = `
       <div class="attachment-chip">
         <span class="badge">Attachment</span>
         <span class="name">${escapeHtml(session.source.label)}</span>
+        <span>${escapeHtml(typeLabel)} · ${escapeHtml(sizeLabel)}</span>
         <span>${restored ? 'Restored from this browser session' : 'File attached'}</span>
         ${restored ? '<button type="button" id="reattach-tip" title="Re-upload to continue editing this chat">Reattach to continue</button>' : ''}
       </div>
@@ -1085,12 +1422,12 @@
   function renderMessages(session) {
     els.chatLog.innerHTML = '';
     if (!session.messages.length) {
-      const welcome = document.createElement('div');
-      welcome.className = 'message system';
-      welcome.textContent = session.source
-        ? 'Source attached. Send a message to generate or refine the deck.'
-        : 'Start by attaching a source. New chat always begins blank.';
-      els.chatLog.appendChild(welcome);
+      if (session.source) {
+        const welcome = document.createElement('div');
+        welcome.className = 'message system';
+        welcome.textContent = 'Source attached. Send a message to generate or refine the deck.';
+        els.chatLog.appendChild(welcome);
+      }
       return;
     }
 
@@ -1137,10 +1474,10 @@
       ` : '');
     deck.innerHTML = `
       <div class="deck-head">
-        <div class="title">
-          <div>
+        <div class="summary-bar">
+          <div class="left">
             <h4>${escapeHtml(result.title)}</h4>
-            <p class="sub">Deck preview, export buttons, and review notes appear here.</p>
+            <p>Deck ready. Preview is collapsed by default.</p>
           </div>
           <div class="meta-row">
             <span class="pill"><b>${escapeHtml(String(result.slide_count))}</b> slides</span>
@@ -1156,17 +1493,38 @@
         </div>
       </div>
       ${notesHtml}
-      <div class="preview">
-        <iframe title="Deck preview" srcdoc="${escapeHtml(result.html)}"></iframe>
-      </div>
+      <details class="result-toggle"${session.previewOpen ? ' open' : ''}>
+        <summary>Preview deck</summary>
+        <div class="preview">
+          <iframe title="Deck preview" srcdoc="${escapeHtml(result.html)}"></iframe>
+        </div>
+      </details>
     `;
+    const previewToggle = deck.querySelector('details.result-toggle');
+    if (previewToggle) {
+      previewToggle.addEventListener('toggle', () => {
+        session.previewOpen = previewToggle.open;
+        saveState();
+      });
+    }
     els.chatLog.appendChild(deck);
   }
 
   function paintChatState(session) {
-    els.composer.placeholder = session.source
+    const ready = Boolean(session.source);
+    els.composer.placeholder = ready
       ? 'Ask for changes. Example: make it 30 slides, keep it formal, and make the flowcharts horizontal.'
       : 'Attach a source first, then ask for changes.';
+    if (els.sendHint) {
+      els.sendHint.textContent = ready ? 'Ready to send.' : 'Attach a source first.';
+    }
+    const send = document.getElementById('fb-apply');
+    if (send) send.disabled = !ready;
+  }
+
+  function isNearBottom(container) {
+    if (!container) return true;
+    return container.scrollHeight - container.scrollTop - container.clientHeight < 48;
   }
 
   function escapeHtml(s) {
@@ -1244,6 +1602,7 @@
     session.chatTurns = [];
     session.result = null;
     session.notesMetaText = '';
+    session.sourceOpen = false;
     addSystem(session, 'Source attached. Generating the initial deck...');
   }
 
@@ -1260,11 +1619,21 @@
   }
 
   async function handleFile(file) {
+    const error = validateFile(file);
+    if (error) {
+      setStatus(error, true);
+      return;
+    }
+    if (file.size > SOFT_FILE_LIMIT_BYTES) {
+      setStatus(`Large file detected (${formatBytes(file.size)}). Upload will continue, but it may take longer.`, false);
+    }
     const session = getActiveSession();
     session.source = {
       kind: 'file',
       label: file.name,
       file,
+      size: file.size,
+      type: file.type || file.name.slice(file.name.lastIndexOf('.')).toLowerCase(),
       restored: false,
     };
     session.title = file.name.replace(/\.[^.]+$/, '') || 'Uploaded file';
@@ -1272,6 +1641,7 @@
     session.chatTurns = [];
     session.result = null;
     session.notesMetaText = '';
+    session.sourceOpen = false;
     addSystem(session, `File attached: ${file.name}. Generating the initial deck...`);
     renderAll();
     await generateInitialDeck();
@@ -1343,6 +1713,7 @@
     session.messages = [];
     session.result = null;
     session.notesMetaText = '';
+    session.sourceOpen = false;
     if (session.source?.kind === 'text') {
       session.title = session.source.label;
     } else if (session.source?.kind === 'file') {
@@ -1357,7 +1728,81 @@
   function switchSourceTab(which) {
     const session = getActiveSession();
     session.sourceTab = which;
+    session.sourceOpen = true;
     renderAll();
+  }
+
+  function toggleSourceShell() {
+    const session = getActiveSession();
+    session.sourceOpen = !session.sourceOpen || !session.source;
+    renderAll();
+  }
+
+  function insertRefineChip(text) {
+    const current = els.composer.value.trim();
+    els.composer.value = current ? `${current}\n${text}` : text;
+    els.composer.focus();
+  }
+
+  function setQuickActions(open) {
+    state.quickActionsOpen = open;
+    renderAll();
+  }
+
+  function toggleQuickActions() {
+    setQuickActions(!state.quickActionsOpen);
+  }
+
+  function toggleSidebarDrawer(open) {
+    document.body.classList.toggle('sidebar-open', open);
+    renderAll();
+  }
+
+  function closeOverlays() {
+    state.quickActionsOpen = false;
+    document.body.classList.remove('sidebar-open');
+    const session = getActiveSession();
+    if (session?.sourceOpen) {
+      session.sourceOpen = false;
+    }
+    renderAll();
+  }
+
+  function handleKeyboardShortcuts(e) {
+    const meta = e.metaKey || e.ctrlKey;
+    if (meta && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      toggleQuickActions();
+      return;
+    }
+    if (meta && e.shiftKey && e.key.toLowerCase() === 'n') {
+      e.preventDefault();
+      newSession();
+      renderAll();
+      setStatus('Fresh chat started.');
+      return;
+    }
+    if (meta && e.shiftKey && e.key.toLowerCase() === 'r') {
+      e.preventDefault();
+      renameSession(getActiveSession().id);
+      return;
+    }
+    if (meta && e.shiftKey && e.key.toLowerCase() === 'd') {
+      e.preventDefault();
+      duplicateSession(getActiveSession().id);
+      return;
+    }
+    if (meta && e.key === 'Backspace') {
+      e.preventDefault();
+      removeSession(getActiveSession().id);
+      return;
+    }
+    if (e.key === 'Escape') {
+      if (state.quickActionsOpen || document.body.classList.contains('sidebar-open') || getActiveSession()?.sourceOpen) {
+        e.preventDefault();
+        closeOverlays();
+      }
+    }
   }
 
   function init() {
@@ -1379,7 +1824,16 @@
     document.getElementById('chat-reset-top').addEventListener('click', resetCurrentChat);
     document.getElementById('chat-reset').addEventListener('click', resetCurrentChat);
     document.getElementById('fb-apply').addEventListener('click', sendChat);
+    document.getElementById('attach-source').addEventListener('click', () => {
+      toggleSourceShell();
+    });
+    document.getElementById('rename-chat').addEventListener('click', () => renameSession(getActiveSession().id));
+    document.getElementById('duplicate-chat').addEventListener('click', () => duplicateSession(getActiveSession().id));
+    document.getElementById('delete-chat').addEventListener('click', () => removeSession(getActiveSession().id));
+    document.getElementById('chat-title').addEventListener('click', () => renameSession(getActiveSession().id));
     document.getElementById('attach-text').addEventListener('click', () => {
+      const session = getActiveSession();
+      session.sourceOpen = true;
       switchSourceTab('text');
       queueMicrotask(() => els.sourceText.focus());
     });
@@ -1393,6 +1847,7 @@
       const session = getActiveSession();
       session.source = null;
       session.sourceTab = 'text';
+      session.sourceOpen = true;
       renderAll();
       setStatus('Source removed.');
     });
@@ -1430,6 +1885,31 @@
       window.__fbRating = Number(s.dataset.v);
       paintStars(window.__fbRating);
     }));
+
+    document.getElementById('refine-chips').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-insert]');
+      if (!btn) return;
+      insertRefineChip(btn.dataset.insert);
+    });
+
+    document.getElementById('chat-search').addEventListener('input', (e) => {
+      state.chatSearch = e.target.value;
+      renderAll();
+    });
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+      toggleSidebarDrawer(!document.body.classList.contains('sidebar-open'));
+    });
+    document.getElementById('quick-actions').addEventListener('click', (e) => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      if (!action) return;
+      if (action === 'new') newSession();
+      if (action === 'rename') renameSession(getActiveSession().id);
+      if (action === 'duplicate') duplicateSession(getActiveSession().id);
+      if (action === 'delete') removeSession(getActiveSession().id);
+      setQuickActions(false);
+      renderAll();
+    });
+    document.addEventListener('keydown', handleKeyboardShortcuts);
 
     document.getElementById('source-tab-text').addEventListener('click', () => switchSourceTab('text'));
     document.getElementById('source-tab-file').addEventListener('click', () => {
