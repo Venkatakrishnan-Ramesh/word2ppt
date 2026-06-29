@@ -172,6 +172,7 @@ _install_import_stubs()
 
 from app.config import Settings
 from app.html_builder import _render_slide
+from app.diagram_styles import classify_node
 from app.reviewer import _REVIEW_SYSTEM, review_deck
 from app.docx_parser import Block
 from app.models import Deck, Diagram, Slide
@@ -440,14 +441,16 @@ class FeedbackInstructionTests(unittest.TestCase):
     def test_html_renders_diagram_only_slides_as_native_boxes(self) -> None:
         slide = Slide(
             title="Workflow",
-            diagram=Diagram(direction="right", steps=["Start", "Finish"]),
+            diagram=Diagram(direction="right", steps=["Start", "Decision?", "Final report"]),
         )
 
         rendered = _render_slide(slide)
 
         self.assertIn('class="diagram-slide"', rendered)
         self.assertIn('class="diagram-flow right"', rendered)
-        self.assertIn('class="diagram-node"', rendered)
+        self.assertIn('diagram-node--start', rendered)
+        self.assertIn('diagram-node--decision', rendered)
+        self.assertIn('diagram-node--end', rendered)
         self.assertIn('class="diagram-arrow"', rendered)
 
     def test_html_forces_diagram_svg_to_fill_preview_height(self) -> None:
@@ -463,6 +466,12 @@ class FeedbackInstructionTests(unittest.TestCase):
 
         self.assertIn("--diagram-fill", rendered)
         self.assertIn("diagram-flow", rendered)
+
+    def test_diagram_node_classification_uses_flowchart_rules(self) -> None:
+        self.assertEqual(classify_node("Start", 0, 4), "start")
+        self.assertEqual(classify_node("Validate the request?", 1, 4), "decision")
+        self.assertEqual(classify_node("Output report", 2, 4), "output")
+        self.assertEqual(classify_node("Repository cloning", 1, 4), "process")
 
     def test_reviewer_prompt_corrects_layout_when_possible(self) -> None:
         settings = Settings(

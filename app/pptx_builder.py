@@ -16,6 +16,7 @@ from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Emu, Pt
 
+from .diagram_styles import diagram_node_style
 from .models import Deck, Diagram, Slide, Table
 from .themes import DEFAULT_THEME, Theme
 
@@ -139,6 +140,7 @@ def _add_diagram(
         top = top_margin + max(int(height * 0.12) - node_h // 2, 0)
         boxes = []
         for i, label in enumerate(steps):
+            style = diagram_node_style(label, i, count)
             left = left_margin + i * (node_w + gap)
             boxes.append(
                 _node(
@@ -149,6 +151,7 @@ def _add_diagram(
                     node_w,
                     node_h,
                     theme,
+                    kind=style.kind,
                     font_pt=font_pt,
                 )
             )
@@ -158,6 +161,7 @@ def _add_diagram(
         left = left_margin + (area_w - node_w) // 2
         boxes = []
         for i, label in enumerate(steps):
+            style = diagram_node_style(label, i, count)
             top = top_margin + i * (node_h + gap)
             boxes.append(
                 _node(
@@ -168,6 +172,7 @@ def _add_diagram(
                     node_w,
                     node_h,
                     theme,
+                    kind=style.kind,
                     font_pt=font_pt,
                 )
             )
@@ -183,9 +188,10 @@ def _node(
     w: int,
     h: int,
     theme: Theme,
+    kind: str = "process",
     font_pt: int = 16,
 ):
-    shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, w, h)
+    shape = slide.shapes.add_shape(_shape_for_kind(kind), left, top, w, h)
     shape.fill.solid()
     shape.fill.fore_color.rgb = _rgb(theme.node_fill)
     shape.line.color.rgb = _rgb(theme.accent)
@@ -200,6 +206,20 @@ def _node(
     p.font.bold = True
     p.font.color.rgb = _rgb(theme.node_text)
     return shape
+
+
+def _shape_for_kind(kind: str):
+    if kind == "start" or kind == "end":
+        return MSO_SHAPE.FLOWCHART_TERMINATOR
+    if kind == "decision":
+        return MSO_SHAPE.FLOWCHART_DECISION
+    if kind == "input" or kind == "output":
+        return MSO_SHAPE.PARALLELOGRAM
+    if kind == "data":
+        return MSO_SHAPE.CAN
+    if kind == "document":
+        return MSO_SHAPE.FLOWCHART_DOCUMENT
+    return MSO_SHAPE.FLOWCHART_PROCESS
 
 
 def _connect(slide, a, b, theme: Theme) -> None:
