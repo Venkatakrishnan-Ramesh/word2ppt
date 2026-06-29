@@ -54,11 +54,12 @@ _TEMPLATE = """<!DOCTYPE html>
     min-height: 74vh;
     width: 100%;
     margin-top: .75rem;
+    overflow: hidden;
   }}
   .reveal .diagram-flow.right {{
     flex-direction: row;
     align-items: stretch;
-    gap: .8rem;
+    gap: .5rem;
     min-height: 58vh;
   }}
   .reveal .diagram-node {{
@@ -71,8 +72,8 @@ _TEMPLATE = """<!DOCTYPE html>
     border: 4px solid var(--accent);
     border-radius: 1rem;
     padding: 1rem 1.25rem;
-    min-width: clamp(10rem, 20vw, 18rem);
-    max-width: min(22vw, 18rem);
+    min-width: 0;
+    max-width: none;
     min-height: 8.5rem;
     font-size: clamp(1rem, 1.8vw, 1.7rem);
     line-height: 1.2;
@@ -80,8 +81,10 @@ _TEMPLATE = """<!DOCTYPE html>
     box-shadow: 0 1.2rem 2.2rem rgba(27, 42, 74, .08);
   }}
   .reveal .diagram-flow.right .diagram-node {{
+    flex: 1 1 0;
     min-height: 14rem;
-    min-width: clamp(12rem, 24vw, 20rem);
+    min-width: 0;
+    max-width: none;
   }}
   .reveal .diagram-arrow {{
     color: var(--accent);
@@ -92,6 +95,7 @@ _TEMPLATE = """<!DOCTYPE html>
     align-items: center;
     justify-content: center;
     min-width: 2rem;
+    flex: 0 0 auto;
     user-select: none;
   }}
   .reveal .diagram-flow.right .diagram-arrow {{
