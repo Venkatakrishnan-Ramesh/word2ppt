@@ -925,19 +925,19 @@
         <section class="card composer">
           <div class="composer-top">
             <div class="composer-actions">
-              <button class="btn ghost" id="attach-source" type="button">Attach source</button>
+              <button class="btn ghost" id="attach-source" type="button">Paste text</button>
               <button class="btn ghost" id="chat-reset" type="button">Reset chat</button>
             </div>
             <div class="action-row" style="justify-content:flex-end; align-items:center;">
-              <span class="helper" id="send-hint">Attach a source first.</span>
+              <span class="helper" id="send-hint">Paste text first, then add an instruction.</span>
               <button class="btn" id="fb-apply" type="button">Send</button>
             </div>
           </div>
           <section class="attach-shell" id="attach-shell">
             <div class="heading">
               <div>
-                <h3>Source</h3>
-                <p class="sub">Paste text or attach a file, then the deck appears below in the chat stream.</p>
+                <h3>Paste text</h3>
+                <p class="sub">Paste the source text, then add the change instruction before sending.</p>
               </div>
               <div class="action-row">
                 <span class="pill"><b id="source-mode">Text</b></span>
@@ -946,33 +946,16 @@
             </div>
             <div class="source-status" id="source-status"></div>
             <div class="source-editor" id="source-editor">
-              <div class="source-tabs">
-                <button class="tab active" id="source-tab-text" type="button">Paste text</button>
-                <button class="tab" id="source-tab-file" type="button">File source</button>
-              </div>
               <div class="source-panel active" id="source-panel-text">
                 <textarea id="source-text" placeholder="Paste the document text here."></textarea>
                 <div class="action-row" style="margin-top:10px;">
                   <button class="btn" id="start-text" type="button">Attach text</button>
-                  <span class="helper">Use this for copied Word or doc text.</span>
-                </div>
-              </div>
-              <div class="source-panel" id="source-panel-file">
-                <div class="drop" id="drop">
-                  <div class="drop-zone">
-                    <div class="drop-icon">⇪</div>
-                    <div>
-                      <div style="font-weight:700;">Drop a file here</div>
-                      <div class="hint">Word docs, PDFs, and text files work best.</div>
-                    </div>
-                    <label class="btn ghost" for="file">Choose file</label>
-                    <input class="file-picker" id="file" type="file" accept=".doc,.docx,.pdf,.txt,.md,.rtf,.html,.htm" />
-                  </div>
+                  <span class="helper">Use this for copied Word or document text.</span>
                 </div>
               </div>
             </div>
           </section>
-          <textarea id="fb-comment" placeholder="Ask for changes. Example: make it 30 slides, then make the flowcharts horizontal."></textarea>
+          <textarea id="fb-comment" placeholder="Add the instruction before sending. Example: make it 30 slides, then make the flowcharts horizontal."></textarea>
           <div class="chips" id="refine-chips">
             <button class="chip" type="button" data-insert="make it 23 slides">23 slides</button>
             <button class="chip" type="button" data-insert="make the flowcharts horizontal">Flowcharts horizontal</button>
@@ -1020,9 +1003,7 @@
     sourceText: document.getElementById('source-text'),
     sourceEditor: document.getElementById('source-editor'),
     sourceTabText: document.getElementById('source-tab-text'),
-    sourceTabFile: document.getElementById('source-tab-file'),
     sourcePanelText: document.getElementById('source-panel-text'),
-    sourcePanelFile: document.getElementById('source-panel-file'),
     attachmentBar: document.getElementById('attachment-bar'),
     chatLog: document.getElementById('chat-log'),
     status: document.getElementById('fb-msg'),
@@ -1343,12 +1324,9 @@
       els.sourceStatus.innerHTML = '<span class="pill">No source attached</span>';
       els.sourceEditor.style.display = 'grid';
       els.sourceText.value = '';
-      document.getElementById('file').value = '';
       document.getElementById('source-mode').textContent = 'Text';
       els.sourceTabText.classList.toggle('active', session.sourceTab !== 'file');
-      els.sourceTabFile.classList.toggle('active', session.sourceTab === 'file');
       els.sourcePanelText.classList.toggle('active', session.sourceTab !== 'file');
-      els.sourcePanelFile.classList.toggle('active', session.sourceTab === 'file');
       return;
     }
 
@@ -1371,7 +1349,6 @@
       <button class="btn ghost" id="clear-source" type="button">Remove</button>
     `;
     els.sourceText.value = session.source.kind === 'text' ? session.source.text : '';
-    document.getElementById('file').value = '';
     document.getElementById('source-mode').textContent = session.source.kind === 'file' ? 'File' : 'Text';
     els.sourceEditor.style.display = open ? 'grid' : 'none';
     queueMicrotask(() => {
@@ -1514,12 +1491,12 @@
     const pendingText = Boolean(els.sourceText && els.sourceText.value.trim());
     const ready = Boolean(session.source || pendingText);
     els.composer.placeholder = ready
-      ? 'Ask for changes. Example: make it 30 slides, keep it formal, and make the flowcharts horizontal.'
-      : 'Attach a source first, then ask for changes.';
+      ? 'Ask for changes. Example: make it 30 slides, keep it formal, and make the flowcharts horizontal. Or just send to generate.'
+      : 'Paste text first, then add an instruction if you want.';
     if (els.sendHint) {
       els.sendHint.textContent = session.source
         ? 'Ready to send.'
-        : (pendingText ? 'Pasted text will be attached on send.' : 'Attach a source first.');
+        : (pendingText ? 'Pasted text will be attached on send.' : 'Paste text first.');
     }
     const send = document.getElementById('fb-apply');
     if (send) send.disabled = !ready;
@@ -1929,22 +1906,7 @@
     document.addEventListener('keydown', handleKeyboardShortcuts);
 
     document.getElementById('source-tab-text').addEventListener('click', () => switchSourceTab('text'));
-    document.getElementById('source-tab-file').addEventListener('click', () => {
-      switchSourceTab('file');
-    });
     document.getElementById('start-text').addEventListener('click', startTextChat);
-    document.getElementById('file').addEventListener('change', () => {
-      const file = document.getElementById('file').files[0];
-      if (file) handleFile(file);
-    });
-    ['dragenter', 'dragover'].forEach(ev =>
-      document.getElementById('drop').addEventListener(ev, e => { e.preventDefault(); document.getElementById('drop').classList.add('drag'); }));
-    ['dragleave', 'drop'].forEach(ev =>
-      document.getElementById('drop').addEventListener(ev, e => { e.preventDefault(); document.getElementById('drop').classList.remove('drag'); }));
-    document.getElementById('drop').addEventListener('drop', e => {
-      const f = e.dataTransfer.files?.[0];
-      if (f) handleFile(f);
-    });
 
     renderAll();
   }
