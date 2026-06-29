@@ -44,7 +44,11 @@ _TEMPLATE = """<!DOCTYPE html>
     width: 100% !important;
     max-width: 100%;
     height: auto !important;
-    max-height: 72vh;
+    max-height: 78vh;
+  }}
+  .reveal section.diagram-slide .mermaid {{
+    min-height: 68vh;
+    align-items: center;
   }}
   .reveal table {{ font-size: .5em; border-collapse: collapse; width: 100%; }}
   .reveal table th, .reveal table td {{
@@ -118,7 +122,9 @@ def _render_slide(slide: Slide) -> str:
     if slide.table:
         parts.append(_render_table(slide.table))
     notes = f"<aside class=\"notes\">{_esc(slide.notes)}</aside>" if slide.notes else ""
-    return f"<section>\n{''.join(parts)}\n{notes}\n</section>"
+    classes = "diagram-slide" if slide.diagram and not slide.bullets and not slide.table else ""
+    class_attr = f' class="{classes}"' if classes else ""
+    return f"<section{class_attr}>\n{''.join(parts)}\n{notes}\n</section>"
 
 
 def _title_section(deck: Deck) -> str:

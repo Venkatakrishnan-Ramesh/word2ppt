@@ -171,9 +171,11 @@ def _install_import_stubs() -> None:
 _install_import_stubs()
 
 from app.config import Settings
+from app.html_builder import _render_slide
 from app.docx_parser import Block
 from app.models import Deck, Diagram, Slide
 from app.pipeline import convert
+from app.pptx_builder import _diagram_layout
 
 
 class FeedbackInstructionTests(unittest.TestCase):
@@ -417,6 +419,32 @@ class FeedbackInstructionTests(unittest.TestCase):
             )
 
         self.assertEqual(result.deck.slides[0].diagram.direction, "right")
+
+    def test_diagram_layout_scales_short_flows_bigger(self) -> None:
+        width = 12192000
+        height = 6858000
+
+        _, _, _, _, _, node_h_right, font_pt_right = _diagram_layout(
+            "right", 2, width, height, True
+        )
+        _, _, _, _, _, node_h_down, font_pt_down = _diagram_layout(
+            "down", 2, width, height, True
+        )
+
+        self.assertGreaterEqual(node_h_right, int(height * 0.28))
+        self.assertGreaterEqual(node_h_down, int(height * 0.20))
+        self.assertEqual(font_pt_right, 18)
+        self.assertEqual(font_pt_down, 18)
+
+    def test_html_marks_diagram_only_slides_for_larger_preview(self) -> None:
+        slide = Slide(
+            title="Workflow",
+            diagram=Diagram(direction="right", steps=["Start", "Finish"]),
+        )
+
+        rendered = _render_slide(slide)
+
+        self.assertIn('class="diagram-slide"', rendered)
 
     def test_review_retries_on_quota_errors_before_skipping(self) -> None:
         settings = Settings(

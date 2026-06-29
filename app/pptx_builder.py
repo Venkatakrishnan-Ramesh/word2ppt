@@ -29,6 +29,36 @@ def _slide_size(prs: Presentation) -> tuple[int, int]:
     return prs.slide_width, prs.slide_height
 
 
+def _diagram_layout(
+    direction: str,
+    count: int,
+    width: int,
+    height: int,
+    roomy: bool,
+) -> tuple[int, int, int, int, int, int]:
+    short = count <= 3
+    top_margin = int(height * (0.16 if roomy else 0.24))
+    area_w = int(width * (0.93 if roomy else 0.86))
+    left_margin = int(width * (0.035 if roomy else 0.07))
+
+    if direction == "right":
+        gap = int(area_w * (0.025 if roomy else 0.035))
+        if short:
+            gap = max(int(width * 0.018), gap)
+        node_w = (area_w - gap * (count - 1)) // count
+        node_h = int(height * (0.30 if roomy and short else 0.24 if roomy else 0.19 if short else 0.16))
+        font_pt = 18 if roomy and short else 17 if short else 16
+    else:
+        node_w = int(area_w * (0.82 if roomy and short else 0.72 if roomy else 0.62 if short else 0.5))
+        available = int(height * (0.78 if roomy and short else 0.72 if roomy else 0.66 if short else 0.62))
+        gap = int(available * (0.03 if roomy else 0.045))
+        node_h = (available - gap * (count - 1)) // count
+        node_h = min(node_h, int(height * (0.26 if roomy and short else 0.21 if roomy else 0.20 if short else 0.16)))
+        font_pt = 18 if roomy and short else 17 if short else 16
+
+    return left_margin, top_margin, area_w, gap, node_w, node_h, font_pt
+
+
 def _add_page_background(slide, prs: Presentation, theme: Theme) -> None:
     """Fill the whole slide with the theme background (needed for dark themes)."""
     if theme.page_bg.upper() in ("FFFFFF", "FFF"):
@@ -100,37 +130,61 @@ def _add_diagram(
     if not steps:
         return
 
-    top_margin = int(height * (0.20 if roomy else 0.28))
-    area_w = int(width * (0.90 if roomy else 0.84))
-    left_margin = int(width * (0.05 if roomy else 0.08))
+    count = len(steps)
+    left_margin, top_margin, area_w, gap, node_w, node_h, font_pt = _diagram_layout(
+        diagram.direction, count, width, height, roomy
+    )
 
     if diagram.direction == "right":
-        gap = int(area_w * (0.03 if roomy else 0.04))
-        node_w = (area_w - gap * (len(steps) - 1)) // len(steps)
-        node_h = int(height * (0.20 if roomy else 0.16))
-        top = top_margin + int(height * (0.08 if roomy else 0.12))
+        top = top_margin + max(int(height * 0.12) - node_h // 2, 0)
         boxes = []
         for i, label in enumerate(steps):
             left = left_margin + i * (node_w + gap)
-            boxes.append(_node(slide, label, left, top, node_w, node_h, theme))
+            boxes.append(
+                _node(
+                    slide,
+                    label,
+                    left,
+                    top,
+                    node_w,
+                    node_h,
+                    theme,
+                    font_pt=font_pt,
+                )
+            )
         for a, b in zip(boxes, boxes[1:]):
             _connect(slide, a, b, theme)
     else:  # "down"
-        node_w = int(area_w * (0.68 if roomy else 0.5))
         left = left_margin + (area_w - node_w) // 2
-        available = int(height * (0.72 if roomy else 0.62))
-        gap = int(available * (0.04 if roomy else 0.05))
-        node_h = (available - gap * (len(steps) - 1)) // len(steps)
-        node_h = min(node_h, int(height * (0.16 if roomy else 0.13)))
         boxes = []
         for i, label in enumerate(steps):
             top = top_margin + i * (node_h + gap)
-            boxes.append(_node(slide, label, left, top, node_w, node_h, theme))
+            boxes.append(
+                _node(
+                    slide,
+                    label,
+                    left,
+                    top,
+                    node_w,
+                    node_h,
+                    theme,
+                    font_pt=font_pt,
+                )
+            )
         for a, b in zip(boxes, boxes[1:]):
             _connect(slide, a, b, theme)
 
 
-def _node(slide, label: str, left: int, top: int, w: int, h: int, theme: Theme):
+def _node(
+    slide,
+    label: str,
+    left: int,
+    top: int,
+    w: int,
+    h: int,
+    theme: Theme,
+    font_pt: int = 16,
+):
     shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, w, h)
     shape.fill.solid()
     shape.fill.fore_color.rgb = _rgb(theme.node_fill)
@@ -142,7 +196,7 @@ def _node(slide, label: str, left: int, top: int, w: int, h: int, theme: Theme):
     p = tf.paragraphs[0]
     p.text = label
     p.alignment = PP_ALIGN.CENTER
-    p.font.size = Pt(16)
+    p.font.size = Pt(font_pt)
     p.font.bold = True
     p.font.color.rgb = _rgb(theme.node_text)
     return shape
