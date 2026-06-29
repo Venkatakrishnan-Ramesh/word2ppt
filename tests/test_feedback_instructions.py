@@ -172,6 +172,7 @@ _install_import_stubs()
 
 from app.config import Settings
 from app.html_builder import _render_slide
+from app.reviewer import _REVIEW_SYSTEM, review_deck
 from app.docx_parser import Block
 from app.models import Deck, Diagram, Slide
 from app.pipeline import convert
@@ -445,6 +446,44 @@ class FeedbackInstructionTests(unittest.TestCase):
         rendered = _render_slide(slide)
 
         self.assertIn('class="diagram-slide"', rendered)
+
+    def test_reviewer_prompt_ignores_diagram_size_layout_comments(self) -> None:
+        settings = Settings(
+            groq_api_key="test-key",
+            groq_model="test-model",
+            groq_fallback_model=None,
+            gemini_api_key=None,
+            gemini_model="test-gemini",
+            max_upload_bytes=1024,
+            groq_max_tokens=128,
+            groq_source_chars=256,
+            feedback_webhook_url=None,
+        )
+        blocks = [Block(kind="text", level=0, text="Body")]
+        deck = Deck(title="Deck", subtitle="Source", slides=[Slide(title="Workflow")])
+        seen: dict[str, str] = {}
+
+        def groq_json_stub(system_prompt, user_prompt, *_args, **_kwargs):
+            seen["system"] = system_prompt
+            seen["user"] = user_prompt
+            return {
+                "notes": ["Kept content intact."],
+                "deck": {
+                    "title": "Deck",
+                    "subtitle": "Source",
+                    "slides": [{"title": "Workflow", "bullets": ["Body"], "diagram": None, "table": None, "notes": ""}],
+                },
+            }
+
+        with patch("app.reviewer.groq_json", groq_json_stub):
+            revised, notes = review_deck(deck, blocks, settings)
+
+        self.assertIn("do NOT critique visual sizing", _REVIEW_SYSTEM)
+        self.assertIn("looks small", _REVIEW_SYSTEM)
+        self.assertIn("do NOT critique visual sizing", seen["system"])
+        self.assertIn("layout", seen["system"].lower())
+        self.assertEqual(revised.title, "Deck")
+        self.assertEqual(notes[0], "Kept content intact.")
 
     def test_review_retries_on_quota_errors_before_skipping(self) -> None:
         settings = Settings(

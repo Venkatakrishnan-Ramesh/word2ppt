@@ -37,6 +37,9 @@ _REVIEW_SYSTEM = textwrap.dedent(
       genuinely sequential.
     - Wording: you MAY rephrase a bullet or table cell for a more formal register,
       but only edit the text of an existing point in place.
+    - Layout: do NOT critique visual sizing, spacing, centering, whitespace, or
+      whether a diagram "looks small" unless the layout makes text unreadable or
+      breaks the meaning of the content.
 
     PRESERVE ALL CONTENT — this is the most important rule:
     - Never delete, drop, or merge away a bullet, table row, or point. Every point
